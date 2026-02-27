@@ -1,0 +1,69 @@
+services:
+
+  api:
+    image: ${IMAGES_PREFIX:-}codemv-api
+    restart: unless-stopped
+    container_name: codemv-api
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-localhost}, api:80
+      APP_ENV: ${APP_ENV:-dev}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - "8280:80"
+      - "8243:443"
+      - "8243:443/udp"
+    networks:
+      - default
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    container_name: codemv-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-codemv}
+      POSTGRES_USER: ${POSTGRES_USER:-codemv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codemv_pass}
+    ports:
+      - "25432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-codemv}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  ###> profile: frontend ###
+  frontend:
+    profiles: [frontend]
+    image: node:20-alpine
+    container_name: codemv-frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "25173:5173"
+    environment:
+      NODE_ENV: development
+      VITE_API_BASE_URL: http://localhost:8280
+    command: sh -c "corepack enable && pnpm install && pnpm dev --host"
+    depends_on:
+      - api
+    networks:
+      - default
+
+volumes:
+  caddy_data:
+  caddy_config:
+  db_data:
+
+networks:
+  default:
+    driver: bridge

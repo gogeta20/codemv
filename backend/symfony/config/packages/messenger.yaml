@@ -1,0 +1,19 @@
+framework:
+    messenger:
+        default_bus: command.bus
+        buses:
+            command.bus:
+                middleware:
+                    - doctrine_transaction
+            query.bus: ~
+
+        transports:
+            sync: 'sync://'
+
+        routing:
+            App\Study\Application\Create\CreateStudyCommand:           sync
+            App\Study\Application\Update\UpdateStudyCommand:           sync
+            App\Study\Application\Delete\DeleteStudyCommand:           sync
+            App\Study\Application\ToggleFavorite\ToggleFavoriteCommand: sync
+            App\Study\Application\Find\FindStudyQuery:                 sync
+            App\Study\Application\List\ListStudiesQuery:               sync

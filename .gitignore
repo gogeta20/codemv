@@ -1,0 +1,27 @@
+# ─── OS / Editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ─── Symfony (backend/symfony/) ───────────────────────────────────────────────
+backend/symfony/vendor/
+backend/symfony/var/
+backend/symfony/.env.local
+backend/symfony/.env.*.local
+backend/symfony/compose.override.yaml
+
+# ─── Frontend ─────────────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/.pnpm-store/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
