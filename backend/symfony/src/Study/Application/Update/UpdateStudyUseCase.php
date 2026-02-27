@@ -6,7 +6,6 @@ use App\Study\Domain\Exception\StudyNotFoundException;
 use App\Study\Domain\Repository\CategoryRepositoryInterface;
 use App\Study\Domain\Repository\StudyRepositoryInterface;
 use App\Study\Domain\Repository\TagRepositoryInterface;
-use App\Study\Infrastructure\Doctrine\Entity\Study;
 use App\Study\Infrastructure\Doctrine\Entity\Tag;
 
 final class UpdateStudyUseCase
@@ -17,7 +16,7 @@ final class UpdateStudyUseCase
         private readonly TagRepositoryInterface $tagRepository,
     ) {}
 
-    public function execute(UpdateStudyCommand $command): Study
+    public function execute(UpdateStudyCommand $command): void
     {
         $study = $this->studyRepository->findByUuid($command->uuid);
 
@@ -31,7 +30,6 @@ final class UpdateStudyUseCase
         if ($command->content !== null) {
             $study->setContent($command->content);
         }
-        // setSummary only when summary was explicitly included in request (even if null, to allow clearing it)
         if ($command->setSummary) {
             $study->setSummary($command->summary);
         }
@@ -41,9 +39,10 @@ final class UpdateStudyUseCase
 
         if ($command->category !== null) {
             $category = $this->categoryRepository->findBySlug($command->category);
-            if ($category !== null) {
-                $study->setCategory($category);
+            if ($category === null) {
+                throw new \InvalidArgumentException("Category '{$command->category}' not found.");
             }
+            $study->setCategory($category);
         }
 
         if ($command->tags !== null) {
@@ -52,8 +51,6 @@ final class UpdateStudyUseCase
         }
 
         $this->studyRepository->save($study);
-
-        return $study;
     }
 
     /** @return Tag[] */

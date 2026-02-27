@@ -1,0 +1,101 @@
+{
+  "uuid": "550e8400-e29b-41d4-a716-446655440000",
+  "ou": "ACME",
+  "name": "ACME Corporation",
+  "distinguishedname": "OU=ACME,DC=codemv,DC=local",
+  "description": "ACME Corporation main OU",
+  "whencreated": "20230101120000Z",
+  "whenchanged": "20240115093000Z",
+  "sub_ous": [
+    {
+      "ou": "IT",
+      "distinguishedname": "OU=IT,OU=ACME,DC=codemv,DC=local",
+      "name": "IT Department",
+      "description": "Information Technology",
+      "whencreated": "20230110080000Z"
+    },
+    {
+      "ou": "HR",
+      "distinguishedname": "OU=HR,OU=ACME,DC=codemv,DC=local",
+      "name": "Human Resources",
+      "description": "HR Department",
+      "whencreated": "20230112090000Z"
+    }
+  ],
+  "sub_ous_count": 2,
+  "users": [
+    {
+      "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "cn": "John Doe",
+      "samaccountname": "jdoe",
+      "distinguishedname": "CN=John Doe,OU=ACME,DC=codemv,DC=local",
+      "mail": "jdoe@acme.local",
+      "displayname": "John Doe",
+      "givenname": "John",
+      "sn": "Doe",
+      "enabled": true,
+      "whencreated": "20230115100000Z",
+      "lastlogon": "20240226080000Z"
+    },
+    {
+      "uuid": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "cn": "Jane Smith",
+      "samaccountname": "jsmith",
+      "distinguishedname": "CN=Jane Smith,OU=ACME,DC=codemv,DC=local",
+      "mail": "jsmith@acme.local",
+      "displayname": "Jane Smith",
+      "givenname": "Jane",
+      "sn": "Smith",
+      "enabled": true,
+      "whencreated": "20230120110000Z",
+      "lastlogon": "20240225163000Z"
+    },
+    {
+      "uuid": null,
+      "cn": "Service Account",
+      "samaccountname": "svc_acme",
+      "distinguishedname": "CN=Service Account,OU=ACME,DC=codemv,DC=local",
+      "mail": null,
+      "displayname": "Service Account",
+      "givenname": null,
+      "sn": null,
+      "enabled": false,
+      "whencreated": "20230201080000Z",
+      "lastlogon": null
+    }
+  ],
+  "users_count": 3,
+  "groups": [
+    {
+      "cn": "ACME-Admins",
+      "distinguishedname": "CN=ACME-Admins,OU=ACME,DC=codemv,DC=local",
+      "description": "ACME administrators group",
+      "samaccountname": "ACME-Admins",
+      "grouptype": "Security",
+      "members_count": 2,
+      "whencreated": "20230101130000Z"
+    },
+    {
+      "cn": "ACME-Users",
+      "distinguishedname": "CN=ACME-Users,OU=ACME,DC=codemv,DC=local",
+      "description": "All ACME users",
+      "samaccountname": "ACME-Users",
+      "grouptype": "Security",
+      "members_count": 45,
+      "whencreated": "20230101131500Z"
+    }
+  ],
+  "groups_count": 2,
+  "computers": [
+    {
+      "cn": "ACME-PC-001",
+      "distinguishedname": "CN=ACME-PC-001,OU=ACME,DC=codemv,DC=local",
+      "dnshostname": "acme-pc-001.codemv.local",
+      "operatingsystem": "Windows 11 Pro",
+      "operatingsystemversion": "10.0 (22621)",
+      "whencreated": "20230201090000Z",
+      "lastlogon": "20240226070000Z"
+    }
+  ],
+  "computers_count": 1
+}

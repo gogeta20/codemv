@@ -1,0 +1,12 @@
+[
+  { "slug": "ddd", "name": "DDD" },
+  { "slug": "cqrs", "name": "CQRS" },
+  { "slug": "symfony", "name": "Symfony" },
+  { "slug": "postgresql", "name": "PostgreSQL" },
+  { "slug": "doctrine", "name": "Doctrine" },
+  { "slug": "migrations", "name": "Migrations" },
+  { "slug": "handler", "name": "Handler" },
+  { "slug": "command", "name": "Command" },
+  { "slug": "query", "name": "Query" },
+  { "slug": "vue", "name": "Vue" }
+]

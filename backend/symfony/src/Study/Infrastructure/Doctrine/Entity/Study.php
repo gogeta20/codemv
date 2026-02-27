@@ -5,7 +5,6 @@ namespace App\Study\Infrastructure\Doctrine\Entity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'studies')]
@@ -52,9 +51,9 @@ class Study
     #[ORM\Column(type: 'datetime')]
     private \DateTime $updatedAt;
 
-    public function __construct(string $title, string $content, Category $category, ?string $summary = null)
+    public function __construct(string $uuid, string $title, string $content, Category $category, ?string $summary = null)
     {
-        $this->uuid = Uuid::uuid4()->toString();
+        $this->uuid = $uuid;
         $this->title = $title;
         $this->content = $content;
         $this->category = $category;

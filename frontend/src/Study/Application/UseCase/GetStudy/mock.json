@@ -1,0 +1,15 @@
+{
+  "uuid": "fe6e6e36-58aa-4d92-ad4e-80b015f8e1f4",
+  "title": "Cómo crear y consumir studies",
+  "summary": "Guía completa del flujo para crear un study en la knowledge base",
+  "content": "# Cómo crear y consumir studies\n\nEste documento describe el flujo completo...\n\n## Crear un study\n\n```bash\nPOST /api/studies\n```\n\n## Consumir un study\n\n```bash\nGET /api/studies/{uuid}/ctx\n```",
+  "category": { "slug": "symfony", "name": "Symfony" },
+  "tags": [
+    { "slug": "ddd", "name": "DDD" },
+    { "slug": "cqrs", "name": "CQRS" },
+    { "slug": "symfony", "name": "Symfony" }
+  ],
+  "status": "published",
+  "is_favorite": true,
+  "created_at": "2026-01-15T10:00:00+00:00"
+}

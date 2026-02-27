@@ -17,9 +17,15 @@ final class DoctrineTagRepository implements TagRepositoryInterface
         return $this->em->getRepository(Tag::class)->findOneBy(['slug' => $slug]);
     }
 
+    /** @return Tag[] */
+    public function findAllSorted(): array
+    {
+        return $this->em->getRepository(Tag::class)->findBy([], ['slug' => 'ASC']);
+    }
+
     public function save(Tag $tag): void
     {
         $this->em->persist($tag);
-        // Flush is handled by doctrine_transaction middleware on command.bus.
+        $this->em->flush();
     }
 }

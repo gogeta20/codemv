@@ -2,8 +2,7 @@
 
 namespace App\Study\Application\Find;
 
-use App\Study\Domain\Exception\StudyNotFoundException;
-use App\Study\Infrastructure\Doctrine\Entity\Study;
+use App\Study\Application\Shared\StudyReadModel;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
@@ -13,12 +12,8 @@ final class FindStudyQueryHandler
         private readonly FindStudyUseCase $useCase,
     ) {}
 
-    public function __invoke(FindStudyQuery $query): ?Study
+    public function __invoke(FindStudyQuery $query): StudyReadModel
     {
-        try {
-            return $this->useCase->execute($query);
-        } catch (StudyNotFoundException) {
-            return null;
-        }
+        return $this->useCase->execute($query);
     }
 }

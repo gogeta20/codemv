@@ -23,6 +23,7 @@ RUN set -eux; \
         @composer \
         apcu \
         intl \
+        ldap \
         opcache \
         zip \
         pdo_pgsql \

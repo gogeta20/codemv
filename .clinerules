@@ -1,0 +1,208 @@
+# Agente CodeMV — Knowledge Base + Symfony CQRS Backend
+
+## Rol
+Este agente trabaja con el proyecto codemv: una API Symfony que sirve como KB personal.
+También interactúa con repos de Jotelulu (event-contracts, php-bs-identity) para documentar trabajo.
+
+## Idioma
+Habla siempre en español.
+
+---
+
+## AL INICIAR CADA TAREA
+
+### 1. Cargar contexto desde codemv
+Ejecuta estos curls al inicio de cada tarea nueva:
+
+```bash
+# Cómo usar la API de studies (crear/leer)
+curl -s http://localhost:8280/api/studies/fe6e6e36-58aa-4d92-ad4e-80b015f8e1f4/ctx
+
+# Guía de event-contracts (crear eventos, generar PHP, integrar)
+curl -s http://localhost:8280/api/studies/5312e012-6221-4ed5-b855-ccaa2f89e202/ctx
+
+# Normas de tags para studies
+curl -s http://localhost:8280/api/studies/a361a073-ad4d-4481-99ee-4867af47825e/ctx
+```
+
+### 2. Verificar .clinerules del proyecto objetivo
+Si el workspace incluye otros repos (php-bs-identity, etc), leer sus `.clinerules` y respetarlos.
+
+### 3. Leer docs del proyecto si existen
+- `docs/implementation_standards.md` → normas del equipo
+- `docs/product_prd.md` → lógica de negocio
+
+---
+
+## ARQUITECTURA CQRS + DDD — REGLAS ESTRICTAS
+
+### Principio fundamental
+**Un Controller → Un Handler → Un UseCase. Sin excepciones.**
+
+### Command Side (escritura/mutación)
+
+1. **Command** (`Application/{Entidad}/{Accion}/{Accion}{Entidad}Command.php`)
+   - Es un DTO `final readonly class` con datos primitivos en el constructor
+   - NO contiene lógica, solo datos
+   - El UUID lo envía el front (no se genera en backend)
+
+2. **CommandHandler** (`Application/{Entidad}/{Accion}/{Accion}{Entidad}CommandHandler.php`)
+   - Anotado con `#[AsMessageHandler(bus: 'command.bus')]`
+   - Recibe el Command vía `__invoke()`
+   - **SIEMPRE devuelve `void`**. NUNCA devuelve datos, DTOs, entidades ni status codes
+   - Delega toda la lógica al UseCase
+   - NO captura excepciones (las deja burbujear)
+
+3. **UseCase** (`Application/{Entidad}/{Accion}/{Accion}{Entidad}UseCase.php`)
+   - **SIEMPRE devuelve `void`** en operaciones de escritura
+   - Inyecta repositorios vía interfaces del dominio
+   - Lanza excepciones de dominio ante errores (`StudyNotFoundException`, `CategoryAlreadyExistsException`, etc.)
+
+4. **Controller de Command** (`Infrastructure/Controller/{Entidad}/{Accion}{Entidad}Controller.php`)
+   - Extiende `ApiController` (que provee `$this->commandBus` y `$this->queryBus`)
+   - Valida input básico (campos requeridos) → 400
+   - Hace `$this->commandBus->dispatch(new XxxCommand(...))`
+   - **NO usa `HandledStamp`** — el command es fire-and-forget
+   - Responde `201 Created` (create), `204 No Content` (update/delete/toggle)
+   - **NO devuelve datos del command**. Si el front necesita datos, hace un GET separado
+
+### Query Side (lectura)
+
+1. **Query** (`Application/{Entidad}/{Accion}/{Accion}{Entidad}Query.php`)
+   - DTO `final readonly class` con filtros/parámetros
+
+2. **QueryHandler** (`Application/{Entidad}/{Accion}/{Accion}{Entidad}QueryHandler.php`)
+   - Anotado con `#[AsMessageHandler(bus: 'query.bus')]`
+   - **SÍ devuelve datos**: `ReadModel`, `array`, etc.
+   - Delega al UseCase
+   - Deja que las excepciones burbujeen
+
+3. **UseCase** (`Application/{Entidad}/{Accion}/{Accion}{Entidad}UseCase.php`)
+   - Devuelve **DTOs/ReadModels**, NUNCA entidades Doctrine
+   - Usa `ReadModel::fromEntity()` para convertir
+
+4. **Controller de Query** (`Infrastructure/Controller/{Entidad}/{Accion}{Entidad}Controller.php`)
+   - Extiende `ApiController`
+   - Hace `$this->queryBus->dispatch(new XxxQuery(...))`
+   - **SÍ usa `HandledStamp`** para obtener el resultado
+   - Devuelve `JsonResponse` con los datos del ReadModel
+
+### Capas DDD — Reglas de dependencia
+
+```
+Controller (Infrastructure) → Command/Query (Application) → UseCase (Application) → Repository Interface (Domain)
+                                                                                   → Entity (Infrastructure/Doctrine)
+```
+
+**PROHIBIDO:**
+- ❌ Command Handler que devuelva datos (SIEMPRE `void`)
+- ❌ UseCase de command que devuelva entidades o DTOs
+- ❌ Controller que inyecte `EntityManagerInterface` directamente
+- ❌ HTTP status codes en la capa Application (ni en Commands, ni en UseCases, ni en Handlers)
+- ❌ Controllers que capturen excepciones de dominio manualmente — el `DomainExceptionListener` las mapea
+- ❌ Entidades Doctrine expuestas en controllers o responses — usar ReadModels/DTOs
+- ❌ Controller monolítico con múltiples métodos — 1 controller = 1 `__invoke()`
+
+**OBLIGATORIO:**
+- ✅ Command → void, Query → datos
+- ✅ Excepciones de dominio (`DomainException`) para errores de negocio
+- ✅ `DomainExceptionListener` centraliza el mapeo excepción → HTTP status
+- ✅ ReadModels con `fromEntity()` y `toArray()` para queries
+- ✅ UUID generado en el client (front), no en backend
+- ✅ Todos los controllers extienden `ApiController` (provee ambos buses)
+- ✅ Repositories se inyectan vía interfaces del dominio
+
+### Estructura de directorios
+
+```
+Application/
+├── {Entidad}/
+│   ├── Create/
+│   │   ├── Create{Entidad}Command.php
+│   │   ├── Create{Entidad}CommandHandler.php
+│   │   └── Create{Entidad}UseCase.php
+│   ├── Update/
+│   ├── Delete/
+│   ├── Find/
+│   │   ├── Find{Entidad}Query.php
+│   │   ├── Find{Entidad}QueryHandler.php
+│   │   └── Find{Entidad}UseCase.php
+│   └── List/
+├── Shared/
+│   └── {Entidad}ReadModel.php
+
+Domain/
+├── Exception/
+│   └── {Entidad}NotFoundException.php
+└── Repository/
+    └── {Entidad}RepositoryInterface.php
+
+Infrastructure/
+├── Controller/
+│   ├── ApiController.php              ← abstract, provee commandBus + queryBus
+│   ├── {Entidad}/
+│   │   ├── Create{Entidad}Controller.php
+│   │   ├── Get{Entidad}Controller.php
+│   │   ├── List{Entidad}Controller.php
+│   │   └── ...
+├── Doctrine/
+│   ├── Entity/
+│   └── Repository/
+└── EventSubscriber/
+    └── DomainExceptionListener.php    ← mapea excepciones de dominio → HTTP
+```
+
+### ApiController base
+
+```php
+abstract class ApiController extends AbstractController
+{
+    public function __construct(
+        protected readonly MessageBusInterface $commandBus,
+        #[Target('query.bus')] protected readonly MessageBusInterface $queryBus,
+    ) {}
+}
+```
+
+Los controllers hijos NO declaran constructor — heredan los buses del padre.
+
+---
+
+## DOCUMENTAR EN CODEMV AL FINALIZAR
+
+Al completar una tarea significativa, crear un study:
+
+```bash
+curl -X POST http://localhost:8280/api/studies \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uuid": "<uuid-v4-generado>",
+    "title": "Titulo descriptivo y conciso",
+    "category": "jotelulu",
+    "summary": "Resumen de 1-2 líneas",
+    "tags": ["PROD-XXXX", "tag-tecnico", "tag-dominio"],
+    "status": "published",
+    "content": "# Contenido en markdown\n\n- Contexto\n- Cambios\n- Patron aplicado"
+  }'
+```
+
+### Normas de studies
+- **Categoría**: siempre `jotelulu`
+- **Tags**: `PROD-XXXX` (ticket) + tags técnicos según normas de tags
+- **Contenido**: resumen técnico denso, sin verbosidad
+- **NO incluir** passwords, tokens ni secretos
+
+### Tags por tipo
+- Tickets: `PROD-5276` (mayúsculas)
+- Tipo: `guia`, `normas`, `referencia`
+- Servicios: `identity`, `event-contracts`, `event-messaging`
+- Dominios: `organization`, `user`, `password`, `oauth`
+- Técnicos: `outbox`, `cqrs`, `ddd`, `docker`, `doctrine`, `ldap`, `rabbitmq`
+
+---
+
+## LÍMITES
+
+- codemv es lectura/escritura de studies via API Y desarrollo del backend Symfony
+- Al crear studies, el UUID se genera en el front y se envía en el body
+- Respetar siempre la arquitectura CQRS documentada arriba

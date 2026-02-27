@@ -2,9 +2,9 @@
 
 namespace App\Study\Application\Find;
 
+use App\Study\Application\Shared\StudyReadModel;
 use App\Study\Domain\Exception\StudyNotFoundException;
 use App\Study\Domain\Repository\StudyRepositoryInterface;
-use App\Study\Infrastructure\Doctrine\Entity\Study;
 
 final class FindStudyUseCase
 {
@@ -12,7 +12,7 @@ final class FindStudyUseCase
         private readonly StudyRepositoryInterface $studyRepository,
     ) {}
 
-    public function execute(FindStudyQuery $query): Study
+    public function execute(FindStudyQuery $query): StudyReadModel
     {
         $study = $this->studyRepository->findByUuid($query->uuid);
 
@@ -20,6 +20,6 @@ final class FindStudyUseCase
             throw new StudyNotFoundException($query->uuid);
         }
 
-        return $study;
+        return StudyReadModel::fromEntity($study);
     }
 }

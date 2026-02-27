@@ -31,3 +31,16 @@ services:
 
     App\Study\Domain\Repository\TagRepositoryInterface:
         class: App\Study\Infrastructure\Doctrine\Repository\DoctrineTagRepository
+
+    # --- Shared: LDAP ---
+    App\Shared\Infrastructure\Ldap\LdapConnectionService:
+        arguments:
+            $ldapHost: '%env(LDAP_HOST)%'
+            $ldapPort: '%env(int:LDAP_PORT)%'
+            $bindDn: '%env(LDAP_BIND_DN)%'
+            $bindPassword: '%env(LDAP_BIND_PASSWORD)%'
+            $baseDn: '%env(LDAP_BASE_DN)%'
+
+    # --- ActiveDirectory: Repository binding ---
+    App\ActiveDirectory\Domain\Repository\OrganizationRepositoryInterface:
+        class: App\ActiveDirectory\Infrastructure\Ldap\AdOrganizationRepository

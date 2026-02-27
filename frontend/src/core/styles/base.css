@@ -1,0 +1,167 @@
+/* ─── Reset ──────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Base ───────────────────────────────────────────────────────── */
+body {
+  font-family: var(--p-font-family, system-ui, sans-serif);
+  background: var(--p-surface-50, #f8fafc);
+  color: var(--p-surface-900, #1e293b);
+  min-height: 100vh;
+}
+
+/* ─── Design tokens ──────────────────────────────────────────────── */
+:root {
+  --cmv-radius:        6px;
+  --cmv-radius-lg:     10px;
+  --cmv-header-height: 56px;
+  --cmv-max-width:     1200px;
+
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+}
+
+/* ─── Page layout ────────────────────────────────────────────────── */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Constrained containers for detail / form pages */
+.page--detail {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-8) 0;
+}
+
+.page--form {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: var(--space-8) 0;
+}
+
+.page__header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.page__header--center {
+  align-items: center;
+}
+
+.page__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.page__subtitle {
+  font-size: 0.85rem;
+  color: var(--p-surface-400, #94a3b8);
+}
+
+.page__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ─── Panel ──────────────────────────────────────────────────────── */
+.panel {
+  background: var(--p-surface-0, #fff);
+  border: 1px solid var(--p-surface-200, #e2e8f0);
+  border-radius: var(--cmv-radius-lg);
+  padding: var(--space-5);
+}
+
+/* ─── Form ───────────────────────────────────────────────────────── */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.form-label--sm {
+  display: block;
+  font-size: 0.85rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.form-error {
+  color: #e24c4c;
+  font-size: 0.85rem;
+  margin-top: var(--space-2);
+}
+
+/* ─── Flex ───────────────────────────────────────────────────────── */
+.flex          { display: flex; }
+.flex-col      { flex-direction: column; }
+.flex-wrap     { flex-wrap: wrap; }
+.items-center  { align-items: center; }
+.items-start   { align-items: flex-start; }
+.items-baseline{ align-items: baseline; }
+.justify-between { justify-content: space-between; }
+.justify-end   { justify-content: flex-end; }
+.flex-1        { flex: 1; }
+.ml-auto       { margin-left: auto; }
+
+/* ─── Gap ────────────────────────────────────────────────────────── */
+.gap-1 { gap: var(--space-1); }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.gap-6 { gap: var(--space-6); }
+.gap-8 { gap: var(--space-8); }
+
+/* ─── Spacing ────────────────────────────────────────────────────── */
+.mb-2 { margin-bottom: var(--space-2); }
+.mb-3 { margin-bottom: var(--space-3); }
+.mb-4 { margin-bottom: var(--space-4); }
+.mb-5 { margin-bottom: var(--space-5); }
+.mb-6 { margin-bottom: var(--space-6); }
+.mb-8 { margin-bottom: var(--space-8); }
+
+.mt-2 { margin-top: var(--space-2); }
+.mt-4 { margin-top: var(--space-4); }
+
+/* ─── Width ──────────────────────────────────────────────────────── */
+.w-full { width: 100%; }
+
+/* ─── Typography ─────────────────────────────────────────────────── */
+.text-sm       { font-size: 0.875rem; }
+.text-xs       { font-size: 0.75rem; }
+.text-muted    { color: var(--p-surface-400, #94a3b8); }
+.text-secondary{ color: var(--p-surface-600, #475569); }
+.text-error    { color: #e24c4c; }
+.text-success  { color: #22c55e; }
+.font-semibold { font-weight: 600; }
+.font-bold     { font-weight: 700; }
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

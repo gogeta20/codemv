@@ -16,4 +16,16 @@ final class DoctrineCategoryRepository implements CategoryRepositoryInterface
     {
         return $this->em->getRepository(Category::class)->findOneBy(['slug' => $slug]);
     }
+
+    /** @return Category[] */
+    public function findAllSorted(): array
+    {
+        return $this->em->getRepository(Category::class)->findBy([], ['name' => 'ASC']);
+    }
+
+    public function save(Category $category): void
+    {
+        $this->em->persist($category);
+        $this->em->flush();
+    }
 }

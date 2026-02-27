@@ -1,0 +1,6 @@
+[
+  { "slug": "symfony", "name": "Symfony" },
+  { "slug": "arquitectura", "name": "Arquitectura" },
+  { "slug": "devops", "name": "DevOps" },
+  { "slug": "frontend", "name": "Frontend" }
+]

@@ -16,7 +16,7 @@ final class CreateStudyUseCase
         private readonly TagRepositoryInterface $tagRepository,
     ) {}
 
-    public function execute(CreateStudyCommand $command): Study
+    public function execute(CreateStudyCommand $command): void
     {
         $category = $this->categoryRepository->findBySlug($command->category);
 
@@ -24,7 +24,7 @@ final class CreateStudyUseCase
             throw new \InvalidArgumentException("Category '{$command->category}' not found.");
         }
 
-        $study = new Study($command->title, $command->content, $category, $command->summary);
+        $study = new Study($command->uuid, $command->title, $command->content, $category, $command->summary);
 
         if ($command->status !== null) {
             $study->setStatus($command->status);
@@ -36,8 +36,6 @@ final class CreateStudyUseCase
         }
 
         $this->studyRepository->save($study);
-
-        return $study;
     }
 
     /** @return Tag[] */

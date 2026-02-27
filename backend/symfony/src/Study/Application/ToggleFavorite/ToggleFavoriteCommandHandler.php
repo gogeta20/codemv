@@ -2,8 +2,6 @@
 
 namespace App\Study\Application\ToggleFavorite;
 
-use App\Study\Application\Shared\StudyCommandResult;
-use App\Study\Domain\Exception\StudyNotFoundException;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
@@ -13,13 +11,8 @@ final class ToggleFavoriteCommandHandler
         private readonly ToggleFavoriteUseCase $useCase,
     ) {}
 
-    public function __invoke(ToggleFavoriteCommand $command): StudyCommandResult
+    public function __invoke(ToggleFavoriteCommand $command): void
     {
-        try {
-            $study = $this->useCase->execute($command);
-            return StudyCommandResult::ok(['is_favorite' => $study->isFavorite()]);
-        } catch (StudyNotFoundException) {
-            return StudyCommandResult::notFound();
-        }
+        $this->useCase->execute($command);
     }
 }

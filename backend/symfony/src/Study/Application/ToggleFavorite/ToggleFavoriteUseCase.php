@@ -4,7 +4,6 @@ namespace App\Study\Application\ToggleFavorite;
 
 use App\Study\Domain\Exception\StudyNotFoundException;
 use App\Study\Domain\Repository\StudyRepositoryInterface;
-use App\Study\Infrastructure\Doctrine\Entity\Study;
 
 final class ToggleFavoriteUseCase
 {
@@ -12,7 +11,7 @@ final class ToggleFavoriteUseCase
         private readonly StudyRepositoryInterface $studyRepository,
     ) {}
 
-    public function execute(ToggleFavoriteCommand $command): Study
+    public function execute(ToggleFavoriteCommand $command): void
     {
         $study = $this->studyRepository->findByUuid($command->uuid);
 
@@ -22,7 +21,5 @@ final class ToggleFavoriteUseCase
 
         $study->toggleFavorite();
         $this->studyRepository->save($study);
-
-        return $study;
     }
 }

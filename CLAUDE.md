@@ -24,7 +24,9 @@ CQRS + DDD aplicado. Estructura completa en Application/ con UseCases, Commands,
 
 ## Rutas clave
 - Backend: backend/symfony/src/Study/
-- Frontend: frontend/src/modules/studies/
+- Backend (nueva vertical): backend/symfony/src/ActiveDirectory/
+- Frontend (verticals): frontend/src/Study/ | frontend/src/ActiveDirectory/
+- Frontend (core): frontend/src/core/
 - Devops: devops/dockerfiles/ | devops/mk/
 
 ## Normas generales
@@ -72,3 +74,43 @@ Application/
 - `TagRepository::save()` solo hace `persist` — el flush lo hace el `StudyRepository::save()` posterior
 - `StudyRepository::delete()` hace `remove + flush`
 - El middleware `doctrine_transaction` envuelve todo en BEGIN/COMMIT para atomicidad
+
+## Verticals del proyecto
+
+### Study/ — implementada y activa
+- Backend: `backend/symfony/src/Study/`
+- Frontend: `frontend/src/Study/`
+- Referencia de patrón para todas las verticales nuevas
+
+### ActiveDirectory/ — en desarrollo
+- Backend: `backend/symfony/src/ActiveDirectory/`
+- Frontend: `frontend/src/ActiveDirectory/`
+- Misma estructura que Study/, mismas normas de backend y frontend
+
+## Normas frontend — cómo trabajar en una vertical (OBLIGATORIO seguir este patrón)
+
+Ver detalle completo en `frontend/README.md`.
+
+### Estructura de carpetas por vertical
+```
+frontend/src/<Vertical>/
+├── Application/
+│   └── UseCase/
+│       └── <Action>/
+│           ├── <Action>UseCase.js
+│           └── mock.json          (si la acción retorna datos)
+└── Infrastructure/
+    ├── View/
+    │   └── <Page>View.vue
+    └── Router/
+        └── index.js               (sub-router de la vertical)
+```
+
+### Reglas estrictas frontend
+1. **1 vista = 1 acción = 1 UseCase** por cada llamada HTTP
+2. **Nunca** llamar a `httpClient` directamente desde una vista o componente
+3. **UseCase = InMemory + Api + función principal** — la función principal elige según `UtilHelper.checkEnvironment()`
+4. **InMemory** simula la respuesta con `mock.json` + `UtilHelper.wait()`
+5. **Api** llama a `httpClient` y retorna los datos **desenvueltos** (sin `.data.data`)
+6. **Sub-router** registrado en `router/index.js` principal mediante spread (`...verticalRoutes`)
+7. **CSS**: usar clases de `core/styles/base.css` antes de escribir CSS scoped; nunca inline styles

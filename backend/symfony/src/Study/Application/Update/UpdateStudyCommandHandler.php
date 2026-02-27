@@ -2,8 +2,6 @@
 
 namespace App\Study\Application\Update;
 
-use App\Study\Application\Shared\StudyCommandResult;
-use App\Study\Domain\Exception\StudyNotFoundException;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
@@ -13,15 +11,8 @@ final class UpdateStudyCommandHandler
         private readonly UpdateStudyUseCase $useCase,
     ) {}
 
-    public function __invoke(UpdateStudyCommand $command): StudyCommandResult
+    public function __invoke(UpdateStudyCommand $command): void
     {
-        try {
-            $study = $this->useCase->execute($command);
-            return StudyCommandResult::ok($study->toArray());
-        } catch (StudyNotFoundException) {
-            return StudyCommandResult::notFound();
-        } catch (\InvalidArgumentException $e) {
-            return StudyCommandResult::badRequest($e->getMessage());
-        }
+        $this->useCase->execute($command);
     }
 }

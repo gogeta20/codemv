@@ -1,0 +1,26 @@
+[
+  {
+    "code": "ACME",
+    "name": "ACME Corporation",
+    "distinguishedname": "OU=ACME,DC=codemv,DC=local",
+    "description": "ACME Corporation main OU",
+    "whencreated": "20230101120000Z",
+    "whenchanged": "20240115093000Z"
+  },
+  {
+    "code": "DEVTEAM",
+    "name": "Development Team",
+    "distinguishedname": "OU=DEVTEAM,DC=codemv,DC=local",
+    "description": "Engineering and development department",
+    "whencreated": "20230215080000Z",
+    "whenchanged": "20240220141500Z"
+  },
+  {
+    "code": "SALES",
+    "name": "Sales Department",
+    "distinguishedname": "OU=SALES,DC=codemv,DC=local",
+    "description": "Sales and commercial team",
+    "whencreated": "20230301090000Z",
+    "whenchanged": "20240101120000Z"
+  }
+]

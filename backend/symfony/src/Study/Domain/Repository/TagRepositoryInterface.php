@@ -8,6 +8,8 @@ interface TagRepositoryInterface
 {
     public function findBySlug(string $slug): ?Tag;
 
-    /** Persists without flush — doctrine_transaction middleware handles the commit. */
+    /** @return Tag[] */
+    public function findAllSorted(): array;
+
     public function save(Tag $tag): void;
 }

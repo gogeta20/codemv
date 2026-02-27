@@ -8,6 +8,7 @@
         </span>
         <nav class="app-header__nav">
           <RouterLink to="/studies">Studies</RouterLink>
+          <RouterLink to="/ad/organizations">Active Directory</RouterLink>
           <Button
             :icon="uuidCopied ? 'pi pi-check' : 'pi pi-hashtag'"
             size="small"
@@ -41,13 +42,7 @@ async function copyUuid() {
 </script>
 
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: var(--p-font-family, system-ui, sans-serif);
-  background: var(--p-surface-50, #f8fafc);
-  color: var(--p-surface-900, #1e293b);
-}
+/* Reset and body are in core/styles/base.css */
 
 .app-header {
   background: var(--p-surface-0, #fff);

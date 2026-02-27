@@ -1,25 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import studyRoutes from '@/Study/Infrastructure/Router'
+import activeDirectoryRoutes from '@/ActiveDirectory/Infrastructure/Router'
 
 const routes = [
-  {
-    path: '/',
-    redirect: '/studies'
-  },
-  {
-    path: '/studies',
-    component: () => import('@/modules/studies/StudiesListView.vue')
-  },
-  {
-    path: '/studies/:uuid',
-    component: () => import('@/modules/studies/StudyDetailView.vue')
-  },
-  {
-    path: '/studies/:uuid/edit',
-    component: () => import('@/modules/studies/StudyEditView.vue')
-  }
+  { path: '/', redirect: '/studies' },
+  ...studyRoutes,
+  ...activeDirectoryRoutes,
 ]
 
 export default createRouter({
   history: createWebHistory(),
-  routes
+  routes,
 })
