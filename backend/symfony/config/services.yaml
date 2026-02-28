@@ -41,6 +41,9 @@ services:
             $bindPassword: '%env(LDAP_BIND_PASSWORD)%'
             $baseDn: '%env(LDAP_BASE_DN)%'
 
-    # --- ActiveDirectory: Repository binding ---
+    # --- ActiveDirectory: Repository bindings ---
     App\ActiveDirectory\Domain\Repository\OrganizationRepositoryInterface:
         class: App\ActiveDirectory\Infrastructure\Ldap\AdOrganizationRepository
+
+    App\ActiveDirectory\Domain\Repository\UserRepositoryInterface:
+        class: App\ActiveDirectory\Infrastructure\Ldap\AdUserRepository

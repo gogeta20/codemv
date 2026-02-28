@@ -2,13 +2,20 @@
   <div class="app">
     <header class="app-header">
       <div class="app-header__inner">
-        <span class="app-header__logo">
+        <RouterLink to="/ad/organizations" class="app-header__logo">
           <i class="pi pi-book" style="font-size: 1.2rem" />
           CodeMV
-        </span>
+        </RouterLink>
         <nav class="app-header__nav">
-          <RouterLink to="/studies">Studies</RouterLink>
-          <RouterLink to="/ad/organizations">Active Directory</RouterLink>
+          <RouterLink to="/studies" v-tooltip.bottom="'Studies'">
+            <i class="pi pi-book" />
+          </RouterLink>
+          <RouterLink to="/ad/organizations" v-tooltip.bottom="'Active Directory'">
+            <i class="pi pi-sitemap" />
+          </RouterLink>
+          <RouterLink to="/pruebas" v-tooltip.bottom="'Pruebas'">
+            <i class="pi pi-check-square" />
+          </RouterLink>
           <Button
             :icon="uuidCopied ? 'pi pi-check' : 'pi pi-hashtag'"
             size="small"
@@ -24,6 +31,8 @@
     <main class="app-main">
       <RouterView />
     </main>
+
+    <DevFooter />
   </div>
 </template>
 
@@ -31,6 +40,7 @@
 import { ref } from 'vue'
 import { RouterView, RouterLink } from 'vue-router'
 import Button from 'primevue/button'
+import DevFooter from '@/core/components/DevFooter.vue'
 
 const uuidCopied = ref(false)
 
@@ -45,16 +55,14 @@ async function copyUuid() {
 /* Reset and body are in core/styles/base.css */
 
 .app-header {
-  background: var(--p-surface-0, #fff);
-  border-bottom: 1px solid var(--p-surface-200, #e2e8f0);
+  background: var(--tokyo-bg-secondary);
+  border-bottom: 1px solid var(--tokyo-bg-tertiary);
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
 .app-header__inner {
-  max-width: 1200px;
-  margin: 0 auto;
   padding: 0 1.5rem;
   height: 56px;
   display: flex;
@@ -69,27 +77,35 @@ async function copyUuid() {
   align-items: center;
   gap: 0.5rem;
   color: var(--p-primary-500, #6366f1);
+  text-decoration: none;
 }
 
 .app-header__nav {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .app-header__nav a {
-  color: var(--p-surface-600, #475569);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  color: var(--tokyo-fg-dim);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 1rem;
+  transition: color 0.15s, background 0.15s;
 }
 
-.app-header__nav a:hover {
-  color: var(--p-primary-500, #6366f1);
+.app-header__nav a:hover,
+.app-header__nav a.router-link-active {
+  color: var(--tokyo-blue);
+  background: var(--tokyo-bg-tertiary);
 }
 
 .app-main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 2rem 1.5rem 3.5rem;
 }
 </style>

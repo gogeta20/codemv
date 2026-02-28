@@ -1,0 +1,31 @@
+/* ─── Tokyo Night palette ──────────────────────────────────────────── */
+:root {
+  --tokyo-bg:           #1a1b26;
+  --tokyo-bg-secondary: #24283b;
+  --tokyo-bg-tertiary:  #2f3549;
+  --tokyo-fg:           #c0caf5;
+  --tokyo-fg-secondary: #a9b1d6;
+  --tokyo-fg-dim:       #565f89;
+
+  --tokyo-blue:   #7aa2f7;
+  --tokyo-purple: #bb9af7;
+  --tokyo-green:  #9ece6a;
+  --tokyo-yellow: #e0af68;
+  --tokyo-red:    #f7768e;
+  --tokyo-cyan:   #7dcfff;
+  --tokyo-orange: #ff9e64;
+
+  --primary-color:  var(--tokyo-blue);
+  --primary-active: #5a7dd4;
+  --primary-hover:  #6b8de8;
+  --success-color:  var(--tokyo-green);
+  --info-color:     var(--tokyo-cyan);
+  --warning-color:  var(--tokyo-yellow);
+  --danger-color:   var(--tokyo-red);
+
+  --font-family:  'JetBrains Mono', monospace;
+  --font-size:    14px;
+  --border-radius: 6px;
+
+  --focus-ring: 0 0 0 0.2rem rgba(122, 162, 247, 0.3);
+}

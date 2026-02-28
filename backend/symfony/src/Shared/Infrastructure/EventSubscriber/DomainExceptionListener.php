@@ -37,7 +37,8 @@ final class DomainExceptionListener
 
         // Messenger wraps handler exceptions in HandlerFailedException
         if ($exception instanceof HandlerFailedException) {
-            $exception = $exception->getWrappedExceptions()[0] ?? $exception;
+            $nested = $exception->getWrappedExceptions();
+            $exception = reset($nested) ?: $exception;
         }
 
         // 1. Check explicit map

@@ -42,3 +42,6 @@ bash:
 ## Open psql in DB container
 psql:
 	@$(DOCKER) exec -it codemv-db psql -U codemv codemv
+
+optimize:
+	docker stop dep.cache-redis core.portal

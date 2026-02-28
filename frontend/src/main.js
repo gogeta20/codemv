@@ -6,8 +6,11 @@ import router from './router'
 import App from './App.vue'
 import 'primeicons/primeicons.css'
 import 'highlight.js/styles/github-dark.css'
+import '@/core/styles/theme.css'
 import '@/core/styles/base.css'
 import '@/core/styles/markdown.css'
+
+document.documentElement.classList.add('dark')
 
 const app = createApp(App)
 

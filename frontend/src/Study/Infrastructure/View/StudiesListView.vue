@@ -6,22 +6,50 @@
     </div>
 
     <div class="flex flex-col gap-3 mb-5">
-      <IconField>
-        <InputIcon class="pi pi-search" />
-        <InputText v-model="search" placeholder="Buscar..." class="filters__search" />
-      </IconField>
-
-      <div class="filters__cats">
+      <div class="flex items-center gap-3">
+        <IconField class="flex-1">
+          <InputIcon class="pi pi-search" />
+          <InputText v-model="search" placeholder="Buscar por título, tags..." class="w-full" />
+        </IconField>
         <button
-          v-for="cat in categories"
-          :key="cat.slug"
-          class="cat-chip"
-          :class="{ active: activeCat === cat.slug }"
-          @click="activeCat = activeCat === cat.slug ? null : cat.slug"
+          class="fav-btn"
+          :class="{ active: onlyFavorites }"
+          @click="onlyFavorites = !onlyFavorites"
+          title="Solo favoritos"
         >
-          {{ cat.name }}
+          <i class="pi" :class="onlyFavorites ? 'pi-star-fill' : 'pi-star'" />
+          Favoritos
         </button>
-        <button v-if="activeCat" class="cat-chip cat-chip--clear" @click="activeCat = null">
+      </div>
+
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="filters__cats">
+          <button
+            v-for="cat in categories"
+            :key="cat.slug"
+            class="cat-chip"
+            :class="{ active: activeCat === cat.slug }"
+            @click="activeCat = activeCat === cat.slug ? null : cat.slug"
+          >
+            {{ cat.name }}
+          </button>
+        </div>
+
+        <MultiSelect
+          v-model="activeTags"
+          :options="allTags"
+          placeholder="Filtrar por tags..."
+          :maxSelectedLabels="3"
+          class="filters__tags"
+          display="chip"
+          filter
+        />
+
+        <button
+          v-if="activeCat || activeTags.length"
+          class="cat-chip cat-chip--clear"
+          @click="activeCat = null; activeTags = []"
+        >
           <i class="pi pi-times" /> Limpiar
         </button>
       </div>
@@ -79,17 +107,7 @@
         </template>
       </Column>
 
-      <Column field="status" header="" style="width: 90px">
-        <template #body="{ data }">
-          <Tag
-            :value="data.status"
-            :severity="data.status === 'published' ? 'success' : 'warn'"
-            style="font-size: 0.72rem"
-          />
-        </template>
-      </Column>
-
-      <Column field="created_at" header="Fecha" sortable style="width: 110px">
+      <Column field="created_at" header="Fecha" sortable style="width: 140px">
         <template #body="{ data }">
           <span class="text-sm text-muted">{{ formatDate(data.created_at) }}</span>
         </template>
@@ -118,23 +136,38 @@ import Tag from 'primevue/tag'
 import InputText from 'primevue/inputtext'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
+import MultiSelect from 'primevue/multiselect'
 import { ListStudiesUseCase } from '@/Study/Application/UseCase/ListStudies/ListStudiesUseCase'
 import { ListCategoriesUseCase } from '@/Study/Application/UseCase/ListCategories/ListCategoriesUseCase'
 import { ToggleFavoriteUseCase } from '@/Study/Application/UseCase/ToggleFavorite/ToggleFavoriteUseCase'
 
-const router = useRouter()
-const studies    = ref([])
-const categories = ref([])
-const loading    = ref(true)
-const search     = ref('')
-const activeCat  = ref(null)
-const copied     = ref(null)
+const router       = useRouter()
+const studies      = ref([])
+const categories   = ref([])
+const loading      = ref(true)
+const search       = ref('')
+const activeCat    = ref(null)
+const activeTags   = ref([])
+const onlyFavorites = ref(false)
+const copied       = ref(null)
+
+const allTags = computed(() =>
+  [...new Set(studies.value.flatMap(s => s.tags))].sort()
+)
 
 const filtered = computed(() => {
   let list = studies.value
 
+  if (onlyFavorites.value) {
+    list = list.filter(s => s.is_favorite)
+  }
+
   if (activeCat.value) {
     list = list.filter(s => s.category === activeCat.value)
+  }
+
+  if (activeTags.value.length) {
+    list = list.filter(s => activeTags.value.every(t => s.tags.includes(t)))
   }
 
   if (search.value.trim()) {
@@ -180,8 +213,6 @@ async function copyCtx(uuid) {
 </script>
 
 <style scoped>
-.filters__search { width: 320px; }
-
 .filters__cats {
   display: flex;
   flex-wrap: wrap;
@@ -218,6 +249,30 @@ async function copyCtx(uuid) {
   text-overflow: ellipsis;
   max-width: 360px;
 }
+
+.filters__tags { min-width: 220px; }
+
+.fav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--tokyo-bg-tertiary);
+  background: var(--tokyo-bg-secondary);
+  color: var(--tokyo-fg-dim);
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.fav-btn:hover { border-color: var(--tokyo-yellow); color: var(--tokyo-yellow); }
+.fav-btn.active {
+  background: rgba(224, 175, 104, 0.15);
+  border-color: var(--tokyo-yellow);
+  color: var(--tokyo-yellow);
+}
+.fav-btn.active .pi-star-fill { color: var(--tokyo-yellow); }
 
 .tag-list { display: flex; flex-wrap: wrap; }
 .tag-more  { font-size: 0.72rem; color: #94a3b8; align-self: center; margin-left: 2px; }
