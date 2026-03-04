@@ -5,15 +5,42 @@
       <span class="page__subtitle">{{ organizations.length }} entradas</span>
     </div>
 
-    <div class="mb-5">
+    <!-- Search bar -->
+    <form class="search-bar mb-5" @submit.prevent="handleSearch">
       <IconField>
         <InputIcon class="pi pi-search" />
-        <InputText v-model="search" placeholder="Buscar por nombre, código..." class="search-input" />
+        <InputText
+          v-model="searchInput"
+          placeholder="Buscar por código o descripción..."
+          class="search-input"
+          @keyup.enter="handleSearch"
+        />
       </IconField>
+      <Button
+        type="submit"
+        label="Buscar"
+        icon="pi pi-search"
+        :loading="loading"
+        :disabled="!searchInput.trim()"
+      />
+      <Button
+        v-if="activeSearch"
+        icon="pi pi-times"
+        text
+        severity="secondary"
+        v-tooltip.bottom="'Limpiar búsqueda'"
+        @click="clearSearch"
+      />
+    </form>
+
+    <!-- Active search badge -->
+    <div v-if="activeSearch" class="active-search mb-4">
+      <i class="pi pi-filter-fill" style="font-size: 0.75rem" />
+      Mostrando resultados para: <strong>{{ activeSearch }}</strong>
     </div>
 
     <DataTable
-      :value="filtered"
+      :value="organizations"
       :loading="loading"
       stripedRows
       paginator
@@ -63,34 +90,45 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
+import Button from 'primevue/button'
 import { ListOrganizationsUseCase } from '@/ActiveDirectory/Application/UseCase/ListOrganizations/ListOrganizationsUseCase'
+import { SearchOrganizationsUseCase } from '@/ActiveDirectory/Application/UseCase/SearchOrganizations/SearchOrganizationsUseCase'
 
 const router = useRouter()
 const organizations = ref([])
 const loading = ref(true)
-const search = ref('')
-
-const filtered = computed(() => {
-  if (!search.value.trim()) return organizations.value
-  const q = search.value.toLowerCase()
-  return organizations.value.filter(o =>
-    o.code.toLowerCase().includes(q) ||
-    o.name?.toLowerCase().includes(q) ||
-    o.description?.toLowerCase().includes(q)
-  )
-})
+const searchInput = ref('')
+const activeSearch = ref('')
 
 onMounted(async () => {
   organizations.value = await ListOrganizationsUseCase()
   loading.value = false
 })
+
+async function handleSearch() {
+  const q = searchInput.value.trim()
+  if (!q) return
+
+  loading.value = true
+  activeSearch.value = q
+  organizations.value = await SearchOrganizationsUseCase(q)
+  loading.value = false
+}
+
+async function clearSearch() {
+  searchInput.value = ''
+  activeSearch.value = ''
+  loading.value = true
+  organizations.value = await ListOrganizationsUseCase()
+  loading.value = false
+}
 
 function goToDetail({ data }) {
   router.push(`/ad/organizations/${data.code}`)
@@ -107,7 +145,25 @@ function formatLdapDate(ldap) {
 </script>
 
 <style scoped>
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .search-input { width: 320px; }
+
+.active-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--p-primary-500, #6366f1);
+  background: var(--p-primary-50, #eef2ff);
+  border: 1px solid var(--p-primary-200, #c7d2fe);
+  border-radius: 6px;
+  padding: 0.25rem 0.75rem;
+}
 
 .orgs-table { cursor: pointer; }
 

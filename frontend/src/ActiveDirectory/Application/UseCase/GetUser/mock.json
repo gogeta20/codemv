@@ -1,0 +1,24 @@
+{
+  "uuid": "d1a2b3c4-0001-0001-0001-000000000001",
+  "cn": "Ana García",
+  "samaccountname": "agarcia",
+  "distinguishedname": "CN=Ana García,OU=ACME,DC=codemv,DC=local",
+  "mail": "agarcia@codemv.local",
+  "userprincipalname": "agarcia@codemv.local",
+  "displayname": "Ana García",
+  "givenname": "Ana",
+  "sn": "García",
+  "title": "Desarrolladora Senior",
+  "department": "IT",
+  "company": "ACME Corporation",
+  "useraccountcontrol": "512",
+  "enabled": true,
+  "whencreated": "20230101120000Z",
+  "whenchanged": "20240115093000Z",
+  "lastlogon": "20240220141500Z",
+  "memberof": [
+    "CN=IT Staff,OU=Groups,DC=codemv,DC=local",
+    "CN=Domain Users,OU=Groups,DC=codemv,DC=local",
+    "CN=VPN Access,OU=Groups,DC=codemv,DC=local"
+  ]
+}

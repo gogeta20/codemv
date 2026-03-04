@@ -12,7 +12,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class SearchUsersController extends ApiController
 {
-    #[Route('/api/ad/users/search', methods: ['GET'])]
+    #[Route('/api/ad/users/search', methods: ['GET'], priority: 1)]
     public function __invoke(Request $request): JsonResponse
     {
         $q = $request->query->get('q', '');

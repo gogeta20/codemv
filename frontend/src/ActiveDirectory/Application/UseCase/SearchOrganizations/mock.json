@@ -1,0 +1,10 @@
+[
+  {
+    "code": "ACME",
+    "name": "ACME Corporation",
+    "distinguishedname": "OU=ACME,DC=codemv,DC=local",
+    "description": "ACME Corporation main OU",
+    "whencreated": "20230101120000Z",
+    "whenchanged": "20240115093000Z"
+  }
+]

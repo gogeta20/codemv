@@ -1,5 +1,5 @@
 <template>
-  <div class="page--detail">
+  <div>
     <div class="flex items-center justify-between mb-6">
       <Button icon="pi pi-arrow-left" label="Volver" text size="small" @click="$router.back()" />
     </div>
@@ -72,7 +72,10 @@
           </Column>
           <Column field="samaccountname" header="Username">
             <template #body="{ data }">
-              <code class="code-inline">{{ data.samaccountname }}</code>
+              <code
+                class="code-inline code-inline--link"
+                @click.stop="router.push(`/ad/users/${data.samaccountname}`)"
+              >{{ data.samaccountname }}</code>
             </template>
           </Column>
           <Column field="mail" header="Email">
@@ -142,7 +145,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -150,6 +153,7 @@ import Tag from 'primevue/tag'
 import { GetOrganizationUseCase } from '@/ActiveDirectory/Application/UseCase/GetOrganization/GetOrganizationUseCase'
 
 const route = useRoute()
+const router = useRouter()
 const org = ref(null)
 const loading = ref(true)
 
@@ -173,8 +177,8 @@ function formatLdapDate(ldap) {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--p-primary-500, #6366f1);
-  background: var(--p-primary-50, #eef2ff);
+  color: var(--tokyo-blue);
+  background: var(--tokyo-bg-tertiary);
   padding: 2px 8px;
   border-radius: 4px;
 }
@@ -190,8 +194,8 @@ function formatLdapDate(ldap) {
 }
 
 .stat-card {
-  background: var(--p-surface-0, #fff);
-  border: 1px solid var(--p-surface-200, #e2e8f0);
+  background: var(--tokyo-bg-secondary);
+  border: 1px solid var(--tokyo-bg-tertiary);
   border-radius: var(--cmv-radius-lg, 10px);
   padding: 1.25rem;
   display: flex;
@@ -203,13 +207,13 @@ function formatLdapDate(ldap) {
 .stat-card__value {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--p-primary-500, #6366f1);
+  color: var(--tokyo-blue);
   line-height: 1;
 }
 
 .stat-card__label {
   font-size: 0.8rem;
-  color: var(--p-surface-500, #64748b);
+  color: var(--tokyo-fg-dim);
 }
 
 .section {
@@ -223,14 +227,26 @@ function formatLdapDate(ldap) {
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
-  color: var(--p-surface-700, #334155);
+  color: var(--tokyo-fg-secondary);
 }
 
 .code-inline {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 0.82rem;
-  background: var(--p-surface-100, #f1f5f9);
+  color: var(--tokyo-fg);
+  background: var(--tokyo-bg-tertiary);
   padding: 1px 6px;
   border-radius: 3px;
+}
+
+.code-inline--link {
+  cursor: pointer;
+  color: var(--tokyo-blue);
+  transition: background 0.15s;
+}
+
+.code-inline--link:hover {
+  background: var(--tokyo-bg-secondary);
+  text-decoration: underline;
 }
 </style>

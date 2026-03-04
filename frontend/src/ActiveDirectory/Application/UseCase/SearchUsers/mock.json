@@ -1,0 +1,47 @@
+[
+  {
+    "uuid": "d1a2b3c4-0001-0001-0001-000000000001",
+    "cn": "Ana García",
+    "samaccountname": "agarcia",
+    "distinguishedname": "CN=Ana García,OU=ACME,DC=codemv,DC=local",
+    "mail": "agarcia@codemv.local",
+    "userprincipalname": "agarcia@codemv.local",
+    "displayname": "Ana García",
+    "givenname": "Ana",
+    "sn": "García",
+    "enabled": true,
+    "groups": ["Domain Users", "IT Staff"],
+    "whencreated": "20230101120000Z",
+    "lastlogon": "20240115093000Z"
+  },
+  {
+    "uuid": "d1a2b3c4-0001-0001-0001-000000000002",
+    "cn": "Carlos Martínez",
+    "samaccountname": "cmartinez",
+    "distinguishedname": "CN=Carlos Martínez,OU=DEVTEAM,DC=codemv,DC=local",
+    "mail": "cmartinez@codemv.local",
+    "userprincipalname": "cmartinez@codemv.local",
+    "displayname": "Carlos Martínez",
+    "givenname": "Carlos",
+    "sn": "Martínez",
+    "enabled": true,
+    "groups": ["Domain Users", "Developers"],
+    "whencreated": "20230215080000Z",
+    "lastlogon": "20240220141500Z"
+  },
+  {
+    "uuid": "d1a2b3c4-0001-0001-0001-000000000003",
+    "cn": "Laura Sánchez",
+    "samaccountname": "lsanchez",
+    "distinguishedname": "CN=Laura Sánchez,OU=SALES,DC=codemv,DC=local",
+    "mail": null,
+    "userprincipalname": "lsanchez@codemv.local",
+    "displayname": "Laura Sánchez",
+    "givenname": "Laura",
+    "sn": "Sánchez",
+    "enabled": false,
+    "groups": ["Domain Users"],
+    "whencreated": "20230301090000Z",
+    "lastlogon": null
+  }
+]
