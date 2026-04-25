@@ -94,6 +94,7 @@ function randomDigits(n) {
 function generateOrgData() {
   const code = 'W' + randomLetters(3) + randomDigits(3)
   return {
+    uuid: crypto.randomUUID(),
     organizationCode: code,
     organizationName: `Test Org ${code}`,
     email: `test-${code.toLowerCase()}@codemv-pruebas.local`,
@@ -120,10 +121,10 @@ async function run() {
 
   // Step 1: Create Org A
   orgA.value = await CreateOrganizationUseCase({
+    uuid: orgAData.value.uuid,
     organizationCode: orgAData.value.organizationCode,
     organizationName: orgAData.value.organizationName,
     email: orgAData.value.email,
-    provider: 'ldap',
   })
 
   if (!orgA.value.success) {
@@ -136,24 +137,33 @@ async function run() {
 
   // Step 2: Create Org B
   orgB.value = await CreateOrganizationUseCase({
+    uuid: orgBData.value.uuid,
     organizationCode: orgBData.value.organizationCode,
     organizationName: orgBData.value.organizationName,
     email: orgBData.value.email,
-    provider: 'ldap',
   })
 
   running.value = false
+
+  if (!orgA.value.success || !orgB.value.success) return
+
+  // Wait for LDAP propagation before downstream steps use the orgs
+  await delay(5000)
 
   // Emit data for downstream steps
   if (orgA.value.success && orgB.value.success) {
     emit('completed', {
       orgA: {
-        uuid: orgA.value.data?.data?.remote?.uuid,
+        uuid: orgAData.value.uuid,
         code: orgAData.value.organizationCode,
       },
       orgB: {
-        uuid: orgB.value.data?.data?.remote?.uuid,
+        uuid: orgBData.value.uuid,
         code: orgBData.value.organizationCode,
+      },
+      results: {
+        orgA: orgA.value,
+        orgB: orgB.value,
       },
     })
   }

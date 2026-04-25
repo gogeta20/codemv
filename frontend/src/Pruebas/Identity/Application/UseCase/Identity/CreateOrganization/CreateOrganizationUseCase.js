@@ -10,20 +10,16 @@ import { IdentityHttpClient } from '@/Pruebas/Identity/Domain/IdentityHttpClient
  * @param {string} [params.provider='ldap']
  * @returns {Promise<{success: boolean, data?: any, error?: string, duration: number}>}
  */
-async function CreateOrganizationUseCase({ organizationCode, organizationName, email, provider = 'ldap' }) {
+async function CreateOrganizationUseCase({ uuid, organizationCode, organizationName, email, provider }) {
   const start = performance.now()
 
   try {
     const client = IdentityHttpClient.createClient()
 
-    const response = await client.post('/api/identity/v1/organization', {
-      data: {
-        organizationCode,
-        organizationName,
-        email,
-        provider,
-      },
-    })
+    const payload = { uuid, organizationCode, organizationName, email }
+    if (provider) payload.provider = provider
+
+    const response = await client.post('/internal/api/identity/v1/organization', { data: payload })
 
     const duration = Math.round(performance.now() - start)
 

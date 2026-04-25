@@ -17,3 +17,5 @@ framework:
             App\Study\Application\ToggleFavorite\ToggleFavoriteCommand: sync
             App\Study\Application\Find\FindStudyQuery:                 sync
             App\Study\Application\List\ListStudiesQuery:               sync
+            App\Identity\Application\Outbox\List\ListOutboxQuery:           sync
+            App\Identity\Application\Pipeline\Publish\PublishPipelineCommand: sync

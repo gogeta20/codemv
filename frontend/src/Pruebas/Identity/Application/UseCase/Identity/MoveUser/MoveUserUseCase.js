@@ -13,7 +13,7 @@ async function MoveUserUseCase(userUuid, targetOrganizationUuid) {
   try {
     const client = IdentityHttpClient.createClient()
 
-    const response = await client.put(`/api/identity/v1/user/${userUuid}/organization`, {
+    const response = await client.put(`/internal/api/identity/v1/user/${userUuid}/organization`, {
       data: {
         targetOrganizationUuid,
       },

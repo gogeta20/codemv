@@ -59,6 +59,7 @@ import Tag from 'primevue/tag'
 import { CreateOrganizationUseCase } from '@/Pruebas/Identity/Application/UseCase/Identity/CreateOrganization/CreateOrganizationUseCase'
 
 const form = ref({
+  uuid: '',
   organizationCode: '',
   organizationName: '',
   email: '',
@@ -96,6 +97,7 @@ function randomDigits(n) {
 function generate() {
   const code = 'W' + randomLetters(3) + randomDigits(3)
   const nameSuffix = code.toLowerCase()
+  form.value.uuid = crypto.randomUUID()
   form.value.organizationCode = code
   form.value.organizationName = `Test Org ${code}`
   form.value.email = `test-${nameSuffix}@codemv-pruebas.local`
@@ -112,6 +114,7 @@ async function run() {
   result.value = null
 
   result.value = await CreateOrganizationUseCase({
+    uuid: form.value.uuid,
     organizationCode: form.value.organizationCode,
     organizationName: form.value.organizationName,
     email: form.value.email,

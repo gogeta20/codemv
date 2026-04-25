@@ -48,7 +48,10 @@ const props = defineProps({
   autoRun: { type: Boolean, default: false },
 })
 
+const emit = defineEmits(['completed'])
+
 const running = ref(false)
+const hasRun = ref(false)
 const ready = computed(() => props.orgACode && props.orgBCode)
 
 const checks = reactive([
@@ -78,7 +81,8 @@ function stepClass(result) {
 }
 
 watch(() => [props.orgACode, props.orgBCode, props.autoRun], () => {
-  if (props.autoRun && ready.value && !running.value && checks[0].result === null) {
+  if (props.autoRun && ready.value && !running.value && !hasRun.value) {
+    hasRun.value = true
     run()
   }
 })
@@ -113,6 +117,12 @@ async function run() {
   checks[2].result = await VerifyInAdUseCase(checks[2].path, true)
 
   running.value = false
+
+  emit('completed', {
+    orgA: checks[0].result,
+    orgB: checks[1].result,
+    usersOrgB: checks[2].result,
+  })
 }
 </script>
 

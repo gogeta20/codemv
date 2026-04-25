@@ -48,6 +48,7 @@ const props = defineProps({
 const emit = defineEmits(['completed'])
 
 const running = ref(false)
+const hasRun = ref(false)
 const result = ref(null)
 
 const statusLabel = computed(() => {
@@ -64,7 +65,8 @@ const statusSeverity = computed(() => {
 })
 
 watch(() => [props.orgUuid, props.autoRun], () => {
-  if (props.autoRun && props.orgUuid && !running.value && !result.value) {
+  if (props.autoRun && props.orgUuid && !running.value && !hasRun.value) {
+    hasRun.value = true
     run()
   }
 })
@@ -75,9 +77,7 @@ async function run() {
   result.value = await DeleteOrganizationUseCase(props.orgUuid)
   running.value = false
 
-  if (result.value.success) {
-    emit('completed')
-  }
+  emit('completed', result.value)
 }
 </script>
 

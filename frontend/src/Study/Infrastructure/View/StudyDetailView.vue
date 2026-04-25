@@ -1,5 +1,6 @@
 <template>
   <div class="page--detail">
+    <ConfirmDialog />
     <div class="flex items-center justify-between mb-4">
       <Button icon="pi pi-arrow-left" label="Volver" text size="small" @click="$router.back()" />
       <div class="flex gap-2 items-center">
@@ -18,6 +19,14 @@
           icon="pi pi-pencil"
           size="small"
           @click="router.push(`/studies/${route.params.uuid}/edit`)"
+        />
+        <Button
+          v-if="study"
+          label="Eliminar"
+          icon="pi pi-trash"
+          size="small"
+          severity="danger"
+          @click="confirmDelete"
         />
       </div>
     </div>
@@ -41,11 +50,15 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
+import ConfirmDialog from 'primevue/confirmdialog'
+import { useConfirm } from 'primevue/useconfirm'
 import { useMarkdown } from '@/core/composables/useMarkdown'
 import { GetStudyUseCase } from '@/Study/Application/UseCase/GetStudy/GetStudyUseCase'
+import { DeleteStudyUseCase } from '@/Study/Application/UseCase/DeleteStudy/DeleteStudyUseCase'
 
 const route = useRoute()
 const router = useRouter()
+const confirm = useConfirm()
 const { render } = useMarkdown()
 const study = ref(null)
 const loading = ref(true)
@@ -62,6 +75,21 @@ async function copyCtx() {
   await navigator.clipboard.writeText(`http://localhost:8280/api/studies/${route.params.uuid}/ctx`)
   copied.value = true
   setTimeout(() => { copied.value = false }, 1500)
+}
+
+function confirmDelete() {
+  confirm.require({
+    message: `¿Eliminar "${study.value.title}"? Esta acción no se puede deshacer.`,
+    header: 'Confirmar eliminación',
+    icon: 'pi pi-exclamation-triangle',
+    rejectLabel: 'Cancelar',
+    acceptLabel: 'Eliminar',
+    acceptProps: { severity: 'danger' },
+    accept: async () => {
+      await DeleteStudyUseCase(route.params.uuid)
+      router.push('/studies')
+    },
+  })
 }
 </script>
 

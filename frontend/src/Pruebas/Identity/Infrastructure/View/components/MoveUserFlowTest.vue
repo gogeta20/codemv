@@ -48,6 +48,7 @@ const props = defineProps({
 const emit = defineEmits(['completed'])
 
 const running = ref(false)
+const hasRun = ref(false)
 const result = ref(null)
 
 const ready = computed(() => props.userUuid && props.targetOrgUuid)
@@ -66,10 +67,11 @@ const statusSeverity = computed(() => {
 })
 
 watch(() => [props.userUuid, props.targetOrgUuid, props.autoRun], () => {
-  if (props.autoRun && ready.value && !running.value && !result.value) {
+  if (props.autoRun && ready.value && !running.value && !hasRun.value) {
+    hasRun.value = true
     run()
   }
-})
+}, { immediate: true })
 
 async function run() {
   running.value = true
@@ -79,9 +81,8 @@ async function run() {
 
   running.value = false
 
-  if (result.value.success) {
-    emit('completed')
-  }
+  // Always emit so the parent can capture the result for the report
+  emit('completed', result.value)
 }
 </script>
 

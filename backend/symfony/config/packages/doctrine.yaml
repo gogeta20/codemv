@@ -1,8 +1,19 @@
 doctrine:
     dbal:
-        url: '%env(resolve:DATABASE_URL)%'
-        server_version: '16'
-        use_savepoints: true
+        default_connection: default
+        connections:
+            default:
+                url: '%env(resolve:DATABASE_URL)%'
+                server_version: '16'
+                use_savepoints: true
+            identity:
+                driver: pdo_pgsql
+                host: '%env(IDENTITY_DB_HOST)%'
+                port: '%env(int:IDENTITY_DB_PORT)%'
+                dbname: '%env(IDENTITY_DB_NAME)%'
+                user: '%env(IDENTITY_DB_USER)%'
+                password: '%env(IDENTITY_DB_PASSWORD)%'
+                server_version: '16'
     orm:
         auto_generate_proxy_classes: true
         enable_lazy_ghost_objects: true

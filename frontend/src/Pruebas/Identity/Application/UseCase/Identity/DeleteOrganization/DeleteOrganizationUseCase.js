@@ -12,7 +12,7 @@ async function DeleteOrganizationUseCase(uuid) {
   try {
     const client = IdentityHttpClient.createClient()
 
-    await client.delete(`/api/identity/v1/organization/${uuid}`)
+    await client.delete(`/internal/api/identity/v1/organization/${uuid}`)
 
     const duration = Math.round(performance.now() - start)
 

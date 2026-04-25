@@ -41,6 +41,13 @@ services:
             $bindPassword: '%env(LDAP_BIND_PASSWORD)%'
             $baseDn: '%env(LDAP_BASE_DN)%'
 
+    # --- Identity: Repository bindings ---
+    App\Identity\Infrastructure\Dbal\IdentityOutboxRepository:
+        arguments:
+            $connection: '@doctrine.dbal.identity_connection'
+
+    App\Identity\Domain\Repository\OutboxRepositoryInterface: '@App\Identity\Infrastructure\Dbal\IdentityOutboxRepository'
+
     # --- ActiveDirectory: Repository bindings ---
     App\ActiveDirectory\Domain\Repository\OrganizationRepositoryInterface:
         class: App\ActiveDirectory\Infrastructure\Ldap\AdOrganizationRepository

@@ -1,7 +1,7 @@
 <template>
   <div class="test-card">
     <div class="test-card__header">
-      <h3>👤 Crear 2 Usuarios en Org A</h3>
+      <h3>👤 Crear 3 Usuarios en Org A</h3>
       <Tag :value="globalStatus" :severity="globalSeverity" />
     </div>
 
@@ -16,7 +16,7 @@
 
       <div class="test-card__actions">
         <Button
-          label="▶ Crear User 1 + User 2"
+          label="▶ Crear User 1 + 2 + 3"
           icon="pi pi-play"
           :loading="running"
           :disabled="running"
@@ -33,10 +33,11 @@
         />
       </div>
 
-      <!-- User 1 -->
+      <!-- User 1 — se moverá a Org B -->
       <div class="step" :class="stepClass(user1Result)">
         <div class="step__header">
           <span class="step__label">User 1</span>
+          <span class="step__badge">→ mover a Org B</span>
           <span class="step__code">{{ user1Data.email }}</span>
           <Tag v-if="user1Result" :value="user1Result.success ? '✅' : '❌'" :severity="user1Result.success ? 'success' : 'danger'" />
           <span v-if="user1Result" class="step__duration">{{ user1Result.duration }}ms</span>
@@ -44,15 +45,28 @@
         <pre v-if="user1Result" class="step__result">{{ user1Result.success ? JSON.stringify(user1Result.data, null, 2) : user1Result.error }}</pre>
       </div>
 
-      <!-- User 2 -->
+      <!-- User 2 — se eliminará directamente -->
       <div class="step" :class="stepClass(user2Result)">
         <div class="step__header">
           <span class="step__label">User 2</span>
+          <span class="step__badge">→ eliminar directo</span>
           <span class="step__code">{{ user2Data.email }}</span>
           <Tag v-if="user2Result" :value="user2Result.success ? '✅' : '❌'" :severity="user2Result.success ? 'success' : 'danger'" />
           <span v-if="user2Result" class="step__duration">{{ user2Result.duration }}ms</span>
         </div>
         <pre v-if="user2Result" class="step__result">{{ user2Result.success ? JSON.stringify(user2Result.data, null, 2) : user2Result.error }}</pre>
+      </div>
+
+      <!-- User 3 — se quedará en Org A hasta que se borre la org -->
+      <div class="step" :class="stepClass(user3Result)">
+        <div class="step__header">
+          <span class="step__label">User 3</span>
+          <span class="step__badge">→ queda en Org A</span>
+          <span class="step__code">{{ user3Data.email }}</span>
+          <Tag v-if="user3Result" :value="user3Result.success ? '✅' : '❌'" :severity="user3Result.success ? 'success' : 'danger'" />
+          <span v-if="user3Result" class="step__duration">{{ user3Result.duration }}ms</span>
+        </div>
+        <pre v-if="user3Result" class="step__result">{{ user3Result.success ? JSON.stringify(user3Result.data, null, 2) : user3Result.error }}</pre>
       </div>
     </template>
   </div>
@@ -72,23 +86,30 @@ const props = defineProps({
 const emit = defineEmits(['completed'])
 
 const running = ref(false)
+const hasRun = ref(false)
 const user1Result = ref(null)
 const user2Result = ref(null)
+const user3Result = ref(null)
 const user1Data = ref({})
 const user2Data = ref({})
+const user3Data = ref({})
+
+const allSuccess = computed(() =>
+  user1Result.value?.success && user2Result.value?.success && user3Result.value?.success
+)
 
 const globalStatus = computed(() => {
   if (!props.orgCode) return '⬜ Esperando Paso 1'
   if (running.value) return '⏳ Running'
-  if (!user1Result.value && !user2Result.value) return '⬜ Pendiente'
-  if (user1Result.value?.success && user2Result.value?.success) return '✅ 2/2 Pass'
+  if (!user1Result.value) return '⬜ Pendiente'
+  if (allSuccess.value) return '✅ 3/3 Pass'
   return '❌ Fail'
 })
 
 const globalSeverity = computed(() => {
-  if (!props.orgCode || (!user1Result.value && !user2Result.value)) return 'secondary'
+  if (!props.orgCode || !user1Result.value) return 'secondary'
   if (running.value) return 'warn'
-  if (user1Result.value?.success && user2Result.value?.success) return 'success'
+  if (allSuccess.value) return 'success'
   return 'danger'
 })
 
@@ -120,8 +141,10 @@ function generateUserData(index) {
 function generate() {
   user1Data.value = generateUserData(1)
   user2Data.value = generateUserData(2)
+  user3Data.value = generateUserData(3)
   user1Result.value = null
   user2Result.value = null
+  user3Result.value = null
 }
 
 watch(() => props.orgCode, (val) => {
@@ -129,7 +152,8 @@ watch(() => props.orgCode, (val) => {
 }, { immediate: true })
 
 watch(() => [props.orgCode, props.autoRun], () => {
-  if (props.autoRun && props.orgCode && !running.value && !user1Result.value) {
+  if (props.autoRun && props.orgCode && !running.value && !hasRun.value) {
+    hasRun.value = true
     run()
   }
 })
@@ -142,32 +166,32 @@ async function run() {
   running.value = true
   user1Result.value = null
   user2Result.value = null
+  user3Result.value = null
 
-  // Create User 1
-  user1Result.value = await CreateUserUseCase({
-    ...user1Data.value,
-    organizationCode: props.orgCode,
-  })
-
-  if (!user1Result.value.success) {
-    running.value = false
-    return
-  }
+  user1Result.value = await CreateUserUseCase({ ...user1Data.value, organizationCode: props.orgCode })
+  if (!user1Result.value.success) { running.value = false; return }
 
   await delay(2000)
 
-  // Create User 2
-  user2Result.value = await CreateUserUseCase({
-    ...user2Data.value,
-    organizationCode: props.orgCode,
-  })
+  user2Result.value = await CreateUserUseCase({ ...user2Data.value, organizationCode: props.orgCode })
+  if (!user2Result.value.success) { running.value = false; return }
+
+  await delay(2000)
+
+  user3Result.value = await CreateUserUseCase({ ...user3Data.value, organizationCode: props.orgCode })
 
   running.value = false
 
-  if (user1Result.value.success && user2Result.value.success) {
+  if (allSuccess.value) {
     emit('completed', {
       user1: { uuid: user1Data.value.uuid, email: user1Data.value.email },
       user2: { uuid: user2Data.value.uuid, email: user2Data.value.email },
+      user3: { uuid: user3Data.value.uuid, email: user3Data.value.email },
+      results: {
+        user1: user1Result.value,
+        user2: user2Result.value,
+        user3: user3Result.value,
+      },
     })
   }
 }
@@ -223,8 +247,16 @@ async function run() {
   margin-bottom: 0.25rem;
 }
 .step__label { font-weight: 600; font-size: 0.85rem; }
+.step__badge {
+  font-size: 0.72rem;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  color: #64748b;
+}
 .step__code { font-family: monospace; font-size: 0.82rem; color: #6366f1; }
-.step__duration { font-size: 0.75rem; color: #94a3b8; }
+.step__duration { font-size: 0.75rem; color: #94a3b8; margin-left: auto; }
 .step__result {
   margin: 0.25rem 0 0;
   font-size: 0.75rem;

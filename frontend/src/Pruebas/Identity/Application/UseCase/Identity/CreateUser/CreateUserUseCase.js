@@ -22,17 +22,19 @@ async function CreateUserUseCase(params) {
   try {
     const client = IdentityHttpClient.createClient()
 
-    const response = await client.post('/api/identity/v1/user', {
+    const response = await client.post('/internal/api/identity/v1/user', {
       data: {
         uuid: params.uuid,
-        provider: params.provider || 'ldap',
         organizationCode: params.organizationCode,
+        status: params.status || 'user.status.enabled',
+        provider: params.provider || 'ldap',
         email: params.email,
         name: params.name,
         firstSurname: params.firstSurname,
         lastName: params.lastName,
         initials: params.initials,
         password: params.password,
+        additionalAttributes: {},
       },
     })
 
