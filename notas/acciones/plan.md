@@ -97,20 +97,61 @@ Acciones/
 ```
 
 ### API de precios
-- Candidato principal: **Financial Modeling Prep (FMP)** — free tier viable
-- Alternativa: **Yahoo Finance** (yfinance via endpoint propio)
-- Datos por símbolo: precio, cambio %, market cap
+- **yfinance** (Python local) — gratuito, sin límites, también tiene Screener para top gainers
+- FMP descartado por ahora
+- Datos por símbolo: precio, cambio %, market cap, volumen
 
 ---
 
 ## Estado
 
-- [ ] Definir modelo de datos (Tesis + Symbol)
-- [ ] Elegir API de precios y probar free tier
-- [ ] Crear vertical backend `Acciones/`
-- [ ] Crear vertical frontend `Acciones/`
-- [ ] Vista de tesis con precios en tiempo real (o quasi)
-- [ ] Primera tesis cargada: "Energía para IA"
+### ✅ Completado (sesiones 02 y 03)
+
+**Backend Symfony (vertical Acciones/)**
+- [x] Entidades Doctrine: `acciones`, `acciones_precios`, `portafolios`, `portafolio_acciones`, `acciones_noticias`
+- [x] CRUD completo: acciones, portafolios, portafolio_acciones, noticias
+- [x] API enriquecida: lista acciones incluye precio + portafolio al que pertenece
+- [x] Lookup proxy → Yahoo Finance search + yfinance detail
+- [x] Campo `exchange`, `sector`, `industry`, `is_default` en portafolios
+
+**Frontend Vue**
+- [x] Vista lista acciones: precio, cambio % con flecha, sector, mercado, portafolio link
+- [x] Vista detalle acción: evolución precio (1s/1m/1y), descripción empresa, noticias
+- [x] Market cap badge: Mega/Large/Mid/Small/Micro/Nano cap
+- [x] Vista lista portafolios: grid con default destacado, botón set-default
+- [x] Vista detalle portafolio: tabla igualada a la principal
+- [x] Crear acción con autocomplete: busca por nombre o símbolo, autorrellena campos
+- [x] Fetch precio automático al crear + añade al portafolio seleccionado
+
+**Agente Python**
+- [x] `tools/prices.py` — precios OHLCV via yfinance
+- [x] `tools/news.py` — noticias via Yahoo Finance RSS
+- [x] `tools/telegram.py` — alertas Telegram (chat personal + grupo Investigación)
+- [x] `steps/morning_analysis.py` — análisis de acciones conocidas
+- [x] `steps/news_check.py` — noticias cuando acción supera umbral
+- [x] `steps/discover_movers.py` — **radar de oportunidades**: top gainers/losers del mercado, filtra desconocidas, guarda en DB + portafolio "investigar" + alerta Telegram
+- [x] `main.py` — orquestador completo
+- [x] `lookup_server.py` — Flask server port 5001: /lookup /price /history /description /news
+- [x] Cron: L-V a las 09:00, 15:30, 18:00, 22:00
+
+**Portafolios creados**
+- `default` (is_default=true) — para acciones añadidas manualmente
+- `main` — portafolio principal
+- `investigar` — acciones descubiertas por el agente
+
+### ⏳ Pendiente
+
+**Agente — más inteligente**
+- [ ] `tools/claude.py` — consultar Claude API para análisis profundo de oportunidades
+- [ ] Resumen semanal los viernes
+- [ ] Filtros más precisos en discover_movers (volumen mínimo, excluir ciertos sectores)
+
+**Frontend — mejoras**
+- [ ] Vista noticias global (todas las alertas recientes)
+- [ ] Historial de precios guardados en detalle de acción
+- [ ] Workflow de investigar → descartar / seguir desde el front
+
+**API de precios**: yfinance (Python, local) — descartado FMP por ahora
 
 ---
 

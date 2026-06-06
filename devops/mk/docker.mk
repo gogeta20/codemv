@@ -45,3 +45,8 @@ psql:
 
 optimize:
 	docker stop dep.cache-redis core.portal
+
+## Start agent lookup server (port 5001)
+agent\:lookup:
+	@cd backend/agent && python3 lookup_server.py &
+	@echo "\033[32m✅ Lookup server en http://localhost:5001\033[0m"

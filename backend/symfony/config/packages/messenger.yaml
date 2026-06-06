@@ -17,5 +17,30 @@ framework:
             App\Study\Application\ToggleFavorite\ToggleFavoriteCommand: sync
             App\Study\Application\Find\FindStudyQuery:                 sync
             App\Study\Application\List\ListStudiesQuery:               sync
+            App\Acciones\Application\Accion\List\ListAccionesQuery:          sync
+            App\Acciones\Application\Accion\Create\CreateAccionCommand:    sync
+            App\Acciones\Application\Accion\Update\UpdateAccionCommand:    sync
+            App\Acciones\Application\Accion\Delete\DeleteAccionCommand:    sync
+            App\Acciones\Application\Accion\Find\FindAccionNoticiasQuery:  sync
+            App\Acciones\Application\Analisis\AnalizarAccion\AnalizarAccionCommand: sync
+            App\Acciones\Application\Analisis\GetAnalisis\GetAnalisisQuery:         sync
+            App\Acciones\Application\Portafolio\List\ListPortafolioQuery:                sync
+            App\Acciones\Application\Portafolio\GetPortafolio\GetPortafolioQuery:     sync
+            App\Acciones\Application\Portafolio\Create\CreatePortafolioCommand:       sync
+            App\Acciones\Application\Portafolio\Update\UpdatePortafolioCommand:       sync
+            App\Acciones\Application\Portafolio\Delete\DeletePortafolioCommand:       sync
+            App\Acciones\Application\Portafolio\AddAccion\AddAccionCommand:           sync
+            App\Acciones\Application\Portafolio\UpdateAccion\UpdateAccionCommand:     sync
+            App\Acciones\Application\Portafolio\RemoveAccion\RemoveAccionCommand:     sync
+            App\Futbol\Application\Partido\ListDelDia\ListPartidosDelDiaQuery:    sync
+            App\Futbol\Application\Partido\GetDetalle\GetPartidoDetalleQuery:   sync
+            App\Futbol\Application\Seleccion\GetDiaria\GetSeleccionDiariaQuery: sync
+            App\Futbol\Application\Liga\GetLigasGpm\GetLigasGpmQuery:          sync
+            App\Futbol\Application\Liga\GetEquiposLiga\GetEquiposLigaQuery:   sync
             App\Identity\Application\Outbox\List\ListOutboxQuery:           sync
             App\Identity\Application\Pipeline\Publish\PublishPipelineCommand: sync
+            App\Futbol\Application\Favorito\List\ListFavoritosQuery:                    sync
+            App\Futbol\Application\Favorito\Add\AddFavoritoCommand:                     sync
+            App\Futbol\Application\Favorito\Remove\RemoveFavoritoCommand:               sync
+            App\Futbol\Application\Favorito\GetPartidos\GetFavoritosPartidosQuery:      sync
+            App\Futbol\Application\Favorito\GetTeamsByLiga\GetTeamsByLigaQuery:         sync

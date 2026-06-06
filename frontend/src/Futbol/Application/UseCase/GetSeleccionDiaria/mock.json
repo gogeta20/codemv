@@ -1,0 +1,131 @@
+{
+  "con_temporada": [
+    {
+      "uuid": "sel-111", "posicion": 1, "tipo": "con_temporada", "fecha": "2026-04-26",
+      "razones": { "gap_tabla": { "gap": 8, "puntos": 3 }, "brecha_puntos": { "gap_pts": 25, "puntos": 2 }, "odds_claridad": { "fav_prob_pct": 65.5, "puntos": 2 }, "local_favorito": { "puntos": 1 } },
+      "partido": {
+        "uuid": "aaa-111", "espn_event_id": "748100",
+        "fecha": "2026-04-26", "hora_utc": "2026-04-26 14:00:00",
+        "equipo_local": "VfB Stuttgart", "equipo_visitante": "Werder Bremen",
+        "estadio": "MHPArena", "estado": "programado",
+        "liga": { "nombre": "Alemania — Bundesliga", "codigo_espn": "ger.1", "pais": "Alemania", "division": 1 },
+        "tabla": { "pos_local": 4, "pos_visitante": 12, "pts_local": 54, "pts_visitante": 29, "pj_local": 32, "pj_visitante": 32 },
+        "forma": { "local": "W-W-D-W-L", "visitante": "L-D-L-W-L" },
+        "odds": { "local": -190, "empate": 310, "visitante": 425, "spread": -0.5, "over_under": 2.5 },
+        "probabilidades": { "local": 0.63, "empate": 0.21, "visitante": 0.16 },
+        "h2h": { "ganados_local": 3, "ganados_visitante": 1, "empates": 1, "detalle": [] },
+        "score_analisis": 8,
+        "resultado": { "goles_local": null, "goles_visitante": null, "goleadores": null }
+      }
+    },
+    {
+      "uuid": "sel-222", "posicion": 2, "tipo": "con_temporada", "fecha": "2026-04-26",
+      "razones": { "gap_tabla": { "gap": 12, "puntos": 4 }, "brecha_puntos": { "gap_pts": 38, "puntos": 2 }, "odds_claridad": { "fav_prob_pct": 72.6, "puntos": 2 } },
+      "partido": {
+        "uuid": "aaa-222", "espn_event_id": "748200",
+        "fecha": "2026-04-26", "hora_utc": "2026-04-26 19:30:00",
+        "equipo_local": "Torino", "equipo_visitante": "Internazionale",
+        "estadio": "Stadio Olimpico Grande Torino", "estado": "programado",
+        "liga": { "nombre": "Italia — Serie A", "codigo_espn": "ita.1", "pais": "Italia", "division": 1 },
+        "tabla": { "pos_local": 16, "pos_visitante": 4, "pts_local": 28, "pts_visitante": 66, "pj_local": 33, "pj_visitante": 33 },
+        "forma": { "local": "L-L-D-L-W", "visitante": "W-W-W-D-W" },
+        "odds": { "local": 600, "empate": 330, "visitante": -265, "spread": 1.5, "over_under": 2.5 },
+        "probabilidades": { "local": 0.14, "empate": 0.21, "visitante": 0.65 },
+        "h2h": { "ganados_local": 1, "ganados_visitante": 3, "empates": 1, "detalle": [] },
+        "score_analisis": 8,
+        "resultado": { "goles_local": null, "goles_visitante": null, "goleadores": null }
+      }
+    }
+  ],
+  "sin_temporada": [
+    {
+      "uuid": "sel-333", "posicion": 1, "tipo": "sin_temporada", "fecha": "2026-04-26",
+      "razones": { "gap_tabla": { "gap": 8, "puntos": 3 }, "odds_claridad": { "fav_prob_pct": 94.7, "puntos": 4 }, "local_favorito": { "puntos": 1 } },
+      "partido": {
+        "uuid": "aaa-333", "espn_event_id": "748300",
+        "fecha": "2026-04-26", "hora_utc": "2026-04-26 14:30:00",
+        "equipo_local": "Bolívar", "equipo_visitante": "Real Tomayapo",
+        "estadio": "Estadio Hernando Siles", "estado": "programado",
+        "liga": { "nombre": "Bolivia — Liga Profesional", "codigo_espn": "bol.1", "pais": "Bolivia", "division": 1 },
+        "tabla": { "pos_local": 6, "pos_visitante": 14, "pts_local": 6, "pts_visitante": 2, "pj_local": 3, "pj_visitante": 3 },
+        "forma": { "local": null, "visitante": null },
+        "odds": { "local": -1800, "empate": 1100, "visitante": 1800, "spread": -3.5, "over_under": 4.5 },
+        "probabilidades": { "local": 0.94, "empate": 0.04, "visitante": 0.02 },
+        "h2h": { "ganados_local": 3, "ganados_visitante": 1, "empates": 1, "detalle": [] },
+        "score_analisis": 8,
+        "resultado": { "goles_local": null, "goles_visitante": null, "goleadores": null }
+      }
+    },
+    {
+      "uuid": "sel-111b", "posicion": 2, "tipo": "sin_temporada", "fecha": "2026-04-26",
+      "razones": { "gap_tabla": { "gap": 8, "puntos": 3 }, "brecha_puntos": { "gap_pts": 25, "puntos": 2 }, "odds_claridad": { "fav_prob_pct": 65.5, "puntos": 2 }, "local_favorito": { "puntos": 1 } },
+      "partido": {
+        "uuid": "aaa-111", "espn_event_id": "748100",
+        "fecha": "2026-04-26", "hora_utc": "2026-04-26 14:00:00",
+        "equipo_local": "VfB Stuttgart", "equipo_visitante": "Werder Bremen",
+        "estadio": "MHPArena", "estado": "programado",
+        "liga": { "nombre": "Alemania — Bundesliga", "codigo_espn": "ger.1", "pais": "Alemania", "division": 1 },
+        "tabla": { "pos_local": 4, "pos_visitante": 12, "pts_local": 54, "pts_visitante": 29, "pj_local": 32, "pj_visitante": 32 },
+        "forma": { "local": "W-W-D-W-L", "visitante": "L-D-L-W-L" },
+        "odds": { "local": -190, "empate": 310, "visitante": 425, "spread": -0.5, "over_under": 2.5 },
+        "probabilidades": { "local": 0.63, "empate": 0.21, "visitante": 0.16 },
+        "h2h": { "ganados_local": 3, "ganados_visitante": 1, "empates": 1, "detalle": [] },
+        "score_analisis": 8,
+        "resultado": { "goles_local": null, "goles_visitante": null, "goleadores": null }
+      }
+    }
+  ],
+  "under": [
+    {
+      "uuid": "sel-u1", "posicion": 1, "tipo": "under", "fecha": "2026-04-26",
+      "razones": {
+        "xg_estimado":       { "total_xg": 1.72, "local_xg": 0.88, "visit_xg": 0.83, "puntos": 3 },
+        "over_under":        { "linea": 2.5, "puntos": 3 },
+        "empate_probable":   { "prob_pct": 33.0, "puntos": 2 },
+        "h2h_bajo_marcador": { "ratio_pct": 75, "partidos": 4, "puntos": 2 },
+        "rank_equipos":      { "local": 2, "visitante": 4, "total_equipos": 20 }
+      },
+      "partido": {
+        "uuid": "aaa-111", "espn_event_id": "748100",
+        "fecha": "2026-04-26", "hora_utc": "2026-04-26 14:00:00",
+        "equipo_local": "Atletico Madrid", "equipo_visitante": "Inter Milan",
+        "estadio": "Wanda Metropolitano", "estado": "programado",
+        "liga": { "nombre": "Champions League", "codigo_espn": "UEFA.CHAMPIONS", "pais": "Europa", "division": 1 },
+        "tabla": { "pos_local": 3, "pos_visitante": 5, "pts_local": 68, "pts_visitante": 62, "pj_local": 33, "pj_visitante": 33 },
+        "forma": { "local": "D-W-D-L-D", "visitante": "W-D-D-W-D" },
+        "odds": { "local": -120, "empate": 270, "visitante": 340, "spread": -0.5, "over_under": 2.5 },
+        "probabilidades": { "local": 0.44, "empate": 0.33, "visitante": 0.23 },
+        "h2h": { "ganados_local": 2, "ganados_visitante": 1, "empates": 3, "detalle": [
+          { "fecha": "2024-03-12", "local": "Inter Milan", "visitante": "Atletico Madrid", "resultado": "1-0", "ganador": "L" },
+          { "fecha": "2023-10-04", "local": "Atletico Madrid", "visitante": "Inter Milan", "resultado": "0-0", "ganador": "D" },
+          { "fecha": "2022-09-21", "local": "Inter Milan", "visitante": "Atletico Madrid", "resultado": "1-1", "ganador": "D" }
+        ]},
+        "score_analisis": 2,
+        "resultado": { "goles_local": null, "goles_visitante": null, "goleadores": null }
+      }
+    },
+    {
+      "uuid": "sel-u2", "posicion": 2, "tipo": "under", "fecha": "2026-04-26",
+      "razones": {
+        "xg_estimado":       { "total_xg": 2.1, "local_xg": 1.1, "visit_xg": 1.0, "puntos": 2 },
+        "over_under":        { "linea": 2.5, "puntos": 3 },
+        "empate_probable":   { "prob_pct": 29.0, "puntos": 1 },
+        "rank_equipos":      { "local": 5, "visitante": 14, "total_equipos": 20 }
+      },
+      "partido": {
+        "uuid": "aaa-222", "espn_event_id": "748200",
+        "fecha": "2026-04-26", "hora_utc": "2026-04-26 19:45:00",
+        "equipo_local": "Torino", "equipo_visitante": "Lecce",
+        "estadio": "Stadio Olimpico Grande Torino", "estado": "programado",
+        "liga": { "nombre": "Italia — Serie A", "codigo_espn": "ita.1", "pais": "Italia", "division": 1 },
+        "tabla": { "pos_local": 11, "pos_visitante": 16, "pts_local": 42, "pts_visitante": 31, "pj_local": 33, "pj_visitante": 33 },
+        "forma": { "local": "D-D-W-D-L", "visitante": "L-D-L-D-L" },
+        "odds": { "local": -155, "empate": 280, "visitante": 420, "spread": -0.5, "over_under": 2.5 },
+        "probabilidades": { "local": 0.52, "empate": 0.29, "visitante": 0.19 },
+        "h2h": { "ganados_local": 2, "ganados_visitante": 1, "empates": 2, "detalle": [] },
+        "score_analisis": 3,
+        "resultado": { "goles_local": null, "goles_visitante": null, "goleadores": null }
+      }
+    }
+  ]
+}

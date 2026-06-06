@@ -1,0 +1,78 @@
+{
+  "data": {
+    "uuid": "mock-uuid-1234",
+    "espn_event_id": "737122",
+    "liga": { "nombre": "Serie A", "codigo_espn": "ita.1", "pais": "Italia" },
+    "fecha": "2026-04-27",
+    "hora_utc": "2026-04-27 14:00:00",
+    "equipo_local": "Cagliari",
+    "equipo_visitante": "Atalanta",
+    "estadio": "Unipol Domus",
+    "estado": "programado",
+    "tabla": {
+      "pos_local": 17, "pos_visitante": 4,
+      "pts_local": 29, "pts_visitante": 57,
+      "pj_local": 32, "pj_visitante": 33
+    },
+    "forma": { "local": "L-W-L-L-L", "visitante": "L-D-L-W-W" },
+    "odds": { "local": 340.0, "empate": 265.0, "visitante": -140.0, "spread": 0.5, "over_under": 2.5 },
+    "probabilidades": { "local": 0.22, "empate": 0.27, "visitante": 0.51 },
+    "h2h": {
+      "ganados_local": 1, "ganados_visitante": 3, "empates": 1,
+      "detalle": [
+        { "fecha": "2025-10-05", "local": "Atalanta", "visitante": "Cagliari", "resultado": "3-1", "ganador": "L" },
+        { "fecha": "2025-04-05", "local": "Cagliari", "visitante": "Atalanta", "resultado": "1-2", "ganador": "L" },
+        { "fecha": "2024-12-01", "local": "Atalanta", "visitante": "Cagliari", "resultado": "1-1", "ganador": "D" },
+        { "fecha": "2024-04-15", "local": "Cagliari", "visitante": "Atalanta", "resultado": "2-0", "ganador": "W" },
+        { "fecha": "2023-12-10", "local": "Atalanta", "visitante": "Cagliari", "resultado": "2-0", "ganador": "L" }
+      ]
+    },
+    "score_analisis": 11,
+    "score_detalle": { "gap_tabla": 3, "odds_claridad": 3, "forma_gap": 2, "local_favorito": 0, "h2h_dominio": 2, "temporada_joven": 0, "close_match": 0 },
+    "resultado": { "goles_local": null, "goles_visitante": null, "goleadores": null },
+    "corners": {
+      "local": { "promedio": 7.1, "total": 50, "partidos": 7, "detalle": [10, 3, 6, 9, 7, 9, 6] },
+      "visitante": { "promedio": 8.7, "total": 52, "partidos": 6, "detalle": [11, 7, 11, 6, 6, 11] }
+    },
+    "lideres": {
+      "local": {
+        "equipo": "Cagliari",
+        "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2925.png",
+        "stats": {
+          "goalsLeaders": [
+            { "jugador": "Sebastiano Esposito", "valor": "Matches: 31, Goals: 6" },
+            { "jugador": "Semih Kiliçsoy", "valor": "Matches: 22, Goals: 4" }
+          ],
+          "assistsLeaders": [
+            { "jugador": "Sebastiano Esposito", "valor": "Matches: 31, Assists: 5" },
+            { "jugador": "Marco Palestra", "valor": "Matches: 32, Assists: 4" }
+          ],
+          "totalShots": [
+            { "jugador": "Sebastiano Esposito", "valor": "46" },
+            { "jugador": "Michael Folorunsho", "valor": "28" }
+          ],
+          "saves": [{ "jugador": "Elia Caprile", "valor": "105" }]
+        }
+      },
+      "visitante": {
+        "equipo": "Atalanta",
+        "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/105.png",
+        "stats": {
+          "goalsLeaders": [
+            { "jugador": "Nikola Krstovic", "valor": "Matches: 29, Goals: 10" },
+            { "jugador": "Gianluca Scamacca", "valor": "Matches: 21, Goals: 8" }
+          ],
+          "assistsLeaders": [
+            { "jugador": "Charles De Ketelaere", "valor": "Matches: 27, Assists: 5" },
+            { "jugador": "Nicola Zalewski", "valor": "Matches: 29, Assists: 4" }
+          ],
+          "totalShots": [
+            { "jugador": "Nikola Krstovic", "valor": "85" },
+            { "jugador": "Gianluca Scamacca", "valor": "53" }
+          ],
+          "saves": [{ "jugador": "Marco Carnesecchi", "valor": "100" }]
+        }
+      }
+    }
+  }
+}

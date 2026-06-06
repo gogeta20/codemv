@@ -1,0 +1,39 @@
+{
+  "uuid": "mock-analisis-001",
+  "accion_uuid": "mock-accion-001",
+  "symbol": "DEMO",
+  "score": "vigilar",
+  "investment_type": "growth",
+  "speculative_type": null,
+  "stage": "mature",
+  "price_at_analysis": 185.50,
+  "portrait": "Empresa en fase de madurez con ingresos crecientes pero márgenes bajo presión. Flujo de caja operativo positivo y estable, aunque el flujo libre de caja se ha visto afectado por un ciclo intenso de inversión en infraestructura. La deuda es manejable en relación al EBITDA. Sin dividendo activo. La dilución accionarial es mínima.",
+  "score_detail": {
+    "fase1": { "fcf_ok": false, "ni_ok": true, "op_ok": true },
+    "camino": "A",
+    "fase2": {
+      "revenue_trend": { "valor": "growing", "puntos": 2 },
+      "gross_margin_trend": { "valor": "stable", "puntos": 1 },
+      "operating_income_trend": { "valor": "growing", "puntos": 2 },
+      "net_income_trend": { "valor": "stable", "puntos": 1 },
+      "shares_trend": { "valor": "stable", "puntos": 1 }
+    },
+    "fase3": {
+      "dividend": { "valor": "none", "puntos": 0 }
+    },
+    "fase4": {
+      "current_ratio": { "valor": 1.4, "nivel": "ok" },
+      "nde_ebitda": { "valor": 2.1, "nivel": "alerta" },
+      "debt_trend": { "valor": "stable", "nivel": "ok" }
+    },
+    "fase5": {
+      "sga_trend": { "valor": "stable", "puntos": 1 },
+      "rd_trend": { "valor": "investing", "puntos": 2 },
+      "capex_trend": { "valor": "growing", "puntos": 1 },
+      "ebitda_margin_trend": { "valor": "stable", "puntos": 1 }
+    },
+    "total_puntos": 15
+  },
+  "created_at": "2026-05-20 08:00:00",
+  "updated_at": "2026-05-20 08:00:00"
+}

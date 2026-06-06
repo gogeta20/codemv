@@ -1,0 +1,18 @@
+{
+  "mas_goles": [
+    { "liga": "Liga Profesional", "pais": "Bolivia",        "codigo": "bol.1", "gpm": 3.24, "partidos": 42  },
+    { "liga": "Bundesliga",       "pais": "Alemania",       "codigo": "ger.1", "gpm": 3.21, "partidos": 294 },
+    { "liga": "MLS",              "pais": "USA",            "codigo": "usa.1", "gpm": 3.20, "partidos": 171 },
+    { "liga": "Eredivisie",       "pais": "Países Bajos",   "codigo": "ned.1", "gpm": 3.17, "partidos": 288 },
+    { "liga": "Superliga",        "pais": "Dinamarca",      "codigo": "den.1", "gpm": 3.06, "partidos": 181 }
+  ],
+  "menos_goles": [
+    { "liga": "Primera División", "pais": "Argentina",      "codigo": "arg.1", "gpm": 2.05, "partidos": 240 },
+    { "liga": "Serie A",          "pais": "Italia",         "codigo": "ita.1", "gpm": 2.40, "partidos": 355 },
+    { "liga": "Primera A",        "pais": "Colombia",       "codigo": "col.1", "gpm": 2.53, "partidos": 190 },
+    { "liga": "Super League",     "pais": "Grecia",         "codigo": "gre.1", "gpm": 2.54, "partidos": 163 },
+    { "liga": "J1 League",        "pais": "Japón",          "codigo": "jpn.1", "gpm": 2.60, "partidos": 159 }
+  ],
+  "actualizado": "2026-05-10",
+  "total_ligas": 23
+}

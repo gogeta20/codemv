@@ -48,6 +48,47 @@ services:
 
     App\Identity\Domain\Repository\OutboxRepositoryInterface: '@App\Identity\Infrastructure\Dbal\IdentityOutboxRepository'
 
+    # --- Acciones: Repository bindings ---
+    App\Acciones\Domain\Repository\AccionRepositoryInterface:
+        class: App\Acciones\Infrastructure\Doctrine\Repository\DoctrineAccionRepository
+
+    App\Acciones\Domain\Repository\AccionPrecioRepositoryInterface:
+        class: App\Acciones\Infrastructure\Doctrine\Repository\DoctrineAccionPrecioRepository
+
+    App\Acciones\Domain\Repository\PortafolioRepositoryInterface:
+        class: App\Acciones\Infrastructure\Doctrine\Repository\DoctrinePortafolioRepository
+
+    App\Acciones\Domain\Repository\PortafolioAccionRepositoryInterface:
+        class: App\Acciones\Infrastructure\Doctrine\Repository\DoctrinePortafolioAccionRepository
+
+    App\Acciones\Domain\Repository\AccionNoticiaRepositoryInterface:
+        class: App\Acciones\Infrastructure\Doctrine\Repository\DoctrineAccionNoticiaRepository
+
+    App\Acciones\Domain\Repository\AccionEarningsRepositoryInterface:
+        class: App\Acciones\Infrastructure\Doctrine\Repository\DoctrineAccionEarningsRepository
+
+    App\Acciones\Domain\Repository\AccionAnalisisRepositoryInterface:
+        class: App\Acciones\Infrastructure\Doctrine\Repository\DoctrineAccionAnalisisRepository
+
+    # --- Futbol: Repository bindings ---
+    App\Futbol\Domain\Repository\FutbolLigaRepositoryInterface:
+        class: App\Futbol\Infrastructure\Doctrine\Repository\DoctrineFutbolLigaRepository
+
+    App\Futbol\Domain\Repository\FutbolPartidoRepositoryInterface:
+        class: App\Futbol\Infrastructure\Doctrine\Repository\DoctrineFutbolPartidoRepository
+
+    App\Futbol\Domain\Repository\FutbolSeleccionDiariaRepositoryInterface:
+        class: App\Futbol\Infrastructure\Doctrine\Repository\DoctrineFutbolSeleccionDiariaRepository
+
+    App\Futbol\Domain\Repository\FutbolAnalisisRepositoryInterface:
+        class: App\Futbol\Infrastructure\Doctrine\Repository\DoctrineFutbolAnalisisRepository
+
+    App\Futbol\Domain\Repository\FutbolLigaGpmRepositoryInterface:
+        class: App\Futbol\Infrastructure\Doctrine\Repository\DoctrineFutbolLigaGpmRepository
+
+    App\Futbol\Domain\Repository\FutbolFavoritoRepositoryInterface:
+        class: App\Futbol\Infrastructure\Doctrine\Repository\DoctrineFutbolFavoritoRepository
+
     # --- ActiveDirectory: Repository bindings ---
     App\ActiveDirectory\Domain\Repository\OrganizationRepositoryInterface:
         class: App\ActiveDirectory\Infrastructure\Ldap\AdOrganizationRepository

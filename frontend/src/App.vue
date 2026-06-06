@@ -13,6 +13,15 @@
           <RouterLink to="/ad/organizations" v-tooltip.bottom="'Active Directory'">
             <i class="pi pi-sitemap" />
           </RouterLink>
+          <RouterLink to="/acciones" v-tooltip.bottom="'Acciones'">
+            <i class="pi pi-chart-line" />
+          </RouterLink>
+          <RouterLink to="/portafolio" v-tooltip.bottom="'Portafolio'">
+            <i class="pi pi-briefcase" />
+          </RouterLink>
+          <RouterLink to="/futbol/seleccion" v-tooltip.bottom="'Fútbol'">
+            <i class="pi pi-star" />
+          </RouterLink>
           <RouterLink to="/pruebas" v-tooltip.bottom="'Pruebas'">
             <i class="pi pi-check-square" />
           </RouterLink>
@@ -33,6 +42,8 @@
     </main>
 
     <DevFooter />
+    <Toast />
+    <ConfirmDialog />
   </div>
 </template>
 
@@ -40,6 +51,8 @@
 import { ref } from 'vue'
 import { RouterView, RouterLink } from 'vue-router'
 import Button from 'primevue/button'
+import Toast from 'primevue/toast'
+import ConfirmDialog from 'primevue/confirmdialog'
 import DevFooter from '@/core/components/DevFooter.vue'
 
 const uuidCopied = ref(false)

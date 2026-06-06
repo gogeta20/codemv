@@ -1,0 +1,14 @@
+{
+  "liga": "ita.1",
+  "total": 20,
+  "equipos": [
+    { "pos": 13, "equipo": "Parma",        "abrev": "PAR", "logo": null, "pj": 35, "pts": 42, "gf": 25, "gc": 42, "gf_pj": 0.71, "gc_pj": 1.20, "total_gpm": 1.91 },
+    { "pos": 17, "equipo": "Lecce",        "abrev": "LEC", "logo": null, "pj": 36, "pts": 32, "gf": 24, "gc": 48, "gf_pj": 0.67, "gc_pj": 1.33, "total_gpm": 2.00 },
+    { "pos":  8, "equipo": "Lazio",        "abrev": "LAZ", "logo": null, "pj": 36, "pts": 51, "gf": 39, "gc": 37, "gf_pj": 1.08, "gc_pj": 1.03, "total_gpm": 2.11 },
+    { "pos":  4, "equipo": "AC Milan",     "abrev": "MIL", "logo": null, "pj": 35, "pts": 67, "gf": 48, "gc": 30, "gf_pj": 1.37, "gc_pj": 0.86, "total_gpm": 2.23 },
+    { "pos": 15, "equipo": "Venezia",      "abrev": "VEN", "logo": null, "pj": 36, "pts": 36, "gf": 31, "gc": 53, "gf_pj": 0.86, "gc_pj": 1.47, "total_gpm": 2.33 },
+    { "pos":  1, "equipo": "Napoli",       "abrev": "NAP", "logo": null, "pj": 36, "pts": 80, "gf": 67, "gc": 24, "gf_pj": 1.86, "gc_pj": 0.67, "total_gpm": 2.53 },
+    { "pos":  2, "equipo": "Inter",        "abrev": "INT", "logo": null, "pj": 35, "pts": 76, "gf": 80, "gc": 30, "gf_pj": 2.29, "gc_pj": 0.86, "total_gpm": 3.14 },
+    { "pos":  3, "equipo": "Atalanta",     "abrev": "ATA", "logo": null, "pj": 36, "pts": 71, "gf": 78, "gc": 37, "gf_pj": 2.17, "gc_pj": 1.03, "total_gpm": 3.19 }
+  ]
+}
