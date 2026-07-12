@@ -54,6 +54,31 @@ def get_scoreboard(liga: str, fecha: date = None) -> list[dict]:
             except ValueError:
                 pass
 
+        # Fase y grupo (World Cup / torneo con grupos)
+        notes = comp.get("notes", [])
+        note_headline = notes[0].get("headline", "") if notes else ""
+        season_obj = ev.get("season", {})
+        season_slug = season_obj.get("slug", "") if isinstance(season_obj, dict) else ""
+        combined = (note_headline + " " + season_slug).lower()
+
+        grupo = None
+        fase = None
+        if "group" in combined or "grupo" in combined:
+            fase = "group_stage"
+            # Extract single letter: "Group A — Matchday 1" → "A"
+            import re as _re
+            m = _re.search(r'group\s+([A-L])', note_headline, _re.IGNORECASE)
+            if m:
+                grupo = m.group(1).upper()
+        elif "round of 16" in combined or "octavo" in combined:
+            fase = "round_of_16"
+        elif "quarter" in combined or "cuarto" in combined:
+            fase = "quarter_final"
+        elif "semi" in combined:
+            fase = "semi_final"
+        elif "final" in combined:
+            fase = "final"
+
         partidos.append({
             "espn_event_id":       str(ev.get("id", "")),
             "nombre":              ev.get("name", ""),
@@ -68,6 +93,8 @@ def get_scoreboard(liga: str, fecha: date = None) -> list[dict]:
             "goles_local":         goles_local,
             "goles_visitante":     goles_visitante,
             "odds_sb":             odds_sb,
+            "grupo":               grupo,
+            "fase":                fase,
         })
 
     return partidos
@@ -127,27 +154,50 @@ def get_match_summary(liga: str, event_id: str) -> dict:
 
     # --- Odds ---
     odds_list = data.get("odds", [])
+    ml_local = ml_visit = ml_draw = None
     if odds_list:
         o = odds_list[0]
         home_odds  = o.get("homeTeamOdds", {})
         away_odds  = o.get("awayTeamOdds", {})
+        draw_odds  = o.get("drawOdds", {}) if isinstance(o.get("drawOdds"), dict) else {}
+        ml_local = _safe_float(home_odds.get("moneyLine"))
+        ml_visit = _safe_float(away_odds.get("moneyLine"))
+        ml_draw  = _safe_float(draw_odds.get("moneyLine"))
         resultado["odds"] = {
-            "local":     _safe_float(home_odds.get("moneyLine") or home_odds.get("current", {}).get("moneyLine")),
-            "visitante": _safe_float(away_odds.get("moneyLine") or away_odds.get("current", {}).get("moneyLine")),
-            "empate":    _safe_float(o.get("drawOdds", {}).get("moneyLine") if isinstance(o.get("drawOdds"), dict) else o.get("drawOdds")),
-            "spread":    _safe_float(o.get("spread")),
-            "over_under":_safe_float(o.get("overUnder")),
+            "local":      _ml_to_decimal(ml_local),
+            "visitante":  _ml_to_decimal(ml_visit),
+            "empate":     _ml_to_decimal(ml_draw),
+            "spread":     _safe_float(o.get("spread")),
+            "over_under": _safe_float(o.get("overUnder")),
         }
 
-    # --- Pickcenter ---
+    # --- Pickcenter probabilities ---
     pc = data.get("pickcenter", [])
+    prob_local = prob_visit = prob_empate = None
     if pc:
         p = pc[0]
-        resultado["probabilidades"] = {
-            "local":     _safe_float(p.get("homeWinPercentage")),
-            "visitante": _safe_float(p.get("awayWinPercentage")),
-            "empate":    _safe_float(p.get("drawPercentage")),
-        }
+        home_odds_pc = p.get("homeTeamOdds", {})
+        away_odds_pc = p.get("awayTeamOdds", {})
+        # Some ESPN endpoints provide winPercentage; others only moneyLine
+        prob_local = _safe_float(home_odds_pc.get("winPercentage") or p.get("homeWinPercentage"))
+        prob_visit = _safe_float(away_odds_pc.get("winPercentage") or p.get("awayWinPercentage"))
+        prob_empate = _safe_float(p.get("drawPercentage"))
+
+    # Fallback: derive normalized probabilities from moneyLines
+    if prob_local is None and ml_local is not None and ml_visit is not None:
+        raw_l = _ml_implied_prob(ml_local)
+        raw_v = _ml_implied_prob(ml_visit)
+        raw_e = _ml_implied_prob(ml_draw) if ml_draw is not None else 0.0
+        total = raw_l + raw_v + raw_e or 1.0
+        prob_local  = round(raw_l / total, 3)
+        prob_visit  = round(raw_v / total, 3)
+        prob_empate = round(raw_e / total, 3) if raw_e else None
+
+    resultado["probabilidades"] = {
+        "local":     prob_local,
+        "visitante": prob_visit,
+        "empate":    prob_empate,
+    }
 
     # --- H2H ---
     # ESPN returns [{team, events[{gameDate,score,homeTeamId,awayTeamId,gameResult,...}]}]
@@ -241,6 +291,90 @@ def get_match_summary(liga: str, event_id: str) -> dict:
         resultado["lideres"] = _extract_leaders_by_team(leaders, home_name, away_name)
 
     return resultado
+
+
+def get_world_cup_group_standings(liga: str = "fifa.world") -> dict:
+    """Returns {group_letter: {team_name: {pos, pts, pj, pg, pe, pp, gf, gc}}}."""
+    url = f"{BASE_V2}/{liga}/standings"
+    try:
+        res = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+        res.raise_for_status()
+        data = res.json()
+    except Exception as e:
+        print(f"[espn] world cup standings ERROR: {e}")
+        return {}
+
+    groups = {}
+    for child in data.get("children", []):
+        group_name = child.get("name", "")          # "Group A", "Group B"...
+        import re as _re
+        m = _re.search(r'group\s+([A-L])', group_name, _re.IGNORECASE)
+        letter = m.group(1).upper() if m else group_name
+
+        entries = child.get("standings", {}).get("entries", [])
+        grupo = {}
+        for i, entry in enumerate(entries):
+            team  = entry.get("team", {})
+            nombre = team.get("displayName", "")
+            stats  = {s["name"]: s.get("value") for s in entry.get("stats", [])}
+            grupo[nombre] = {
+                "pos": i + 1,
+                "pts": _safe_int(stats.get("points")),
+                "pj":  _safe_int(stats.get("gamesPlayed")),
+                "pg":  _safe_int(stats.get("wins")),
+                "pe":  _safe_int(stats.get("ties")),
+                "pp":  _safe_int(stats.get("losses")),
+                "gf":  _safe_int(stats.get("pointsFor")),
+                "gc":  _safe_int(stats.get("pointsAgainst")),
+            }
+        if letter:
+            groups[letter] = grupo
+
+    return groups
+
+
+def get_fifa_rankings(liga: str = "fifa.world") -> dict:
+    """Returns {team_display_name: rank_number} from ESPN FIFA rankings."""
+    url = f"{BASE_SITE}/{liga}/rankings"
+    try:
+        res = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+        res.raise_for_status()
+        data = res.json()
+    except Exception as e:
+        print(f"[espn] FIFA rankings ERROR: {e}")
+        return {}
+
+    rankings = {}
+    entries = data.get("rankings", data.get("athletes", []))
+    for entry in entries:
+        team = entry.get("team", entry.get("athlete", {}))
+        name = team.get("displayName", "")
+        rank = entry.get("current", entry.get("rank", 0))
+        if name and rank:
+            try:
+                rankings[name] = int(rank)
+            except (ValueError, TypeError):
+                pass
+
+    return rankings
+
+
+def _ml_implied_prob(ml: float) -> float:
+    """American moneyLine → implied probability (0-1, with vig)."""
+    if ml is None:
+        return 0.0
+    if ml < 0:
+        return abs(ml) / (abs(ml) + 100)
+    return 100 / (ml + 100)
+
+
+def _ml_to_decimal(ml: float) -> float | None:
+    """American moneyLine → European decimal odds."""
+    if ml is None:
+        return None
+    if ml < 0:
+        return round((100 / abs(ml)) + 1, 2)
+    return round((ml / 100) + 1, 2)
 
 
 def _map_estado(espn_status: str) -> str:

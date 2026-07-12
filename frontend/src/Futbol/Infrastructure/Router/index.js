@@ -28,4 +28,9 @@ export default [
     component: () => import('@/Futbol/Infrastructure/View/FutbolLigaEquiposView.vue'),
     meta: { view: 'FutbolLigaEquiposView.vue', endpoint: 'GET /api/futbol/ligas/{codigo}/equipos' },
   },
+  {
+    path: '/futbol/mundial',
+    component: () => import('@/Futbol/Infrastructure/View/MundialSeleccionView.vue'),
+    meta: { view: 'MundialSeleccionView.vue', endpoint: 'GET /api/futbol/mundial/seleccion' },
+  },
 ]

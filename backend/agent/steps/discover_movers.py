@@ -7,7 +7,6 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 import yfinance as yf
 from db import get_active_acciones, save_precio
-from tools.prices import get_price
 from tools.news import get_news
 from tools.telegram import send_discover as send
 
@@ -181,10 +180,23 @@ def run() -> list[dict]:
             print(f"     → No se pudo guardar en DB")
             continue
 
-        # Guarda precio
-        price_data = get_price(symbol)
-        if 'error' not in price_data:
-            save_precio(uuid, price_data)
+        # Guarda precio usando los datos del screener (ya disponibles, sin segunda llamada a yfinance)
+        prev_close = q.get('regularMarketPreviousClose') or price
+        price_payload = {
+            "price":         round(float(price), 4),
+            "open":          q.get('regularMarketOpen'),
+            "high":          q.get('regularMarketDayHigh'),
+            "low":           q.get('regularMarketDayLow'),
+            "volume":        int(vol),
+            "prev_close":    round(float(prev_close), 4) if prev_close else None,
+            "change_pct":    round(float(pct), 4),
+            "change_amount": round(float(price - prev_close), 4) if prev_close else None,
+        }
+        try:
+            save_precio(uuid, price_payload)
+            print(f"     → Precio guardado: ${price:.2f} ({pct:+.2f}%)")
+        except Exception as e:
+            print(f"     → Error guardando precio: {e}")
 
         # Busca noticias
         news_data = get_news(symbol, max_items=5)

@@ -34,7 +34,8 @@ framework:
             App\Acciones\Application\Portafolio\RemoveAccion\RemoveAccionCommand:     sync
             App\Futbol\Application\Partido\ListDelDia\ListPartidosDelDiaQuery:    sync
             App\Futbol\Application\Partido\GetDetalle\GetPartidoDetalleQuery:   sync
-            App\Futbol\Application\Seleccion\GetDiaria\GetSeleccionDiariaQuery: sync
+            App\Futbol\Application\Seleccion\GetDiaria\GetSeleccionDiariaQuery:   sync
+            App\Futbol\Application\Seleccion\GetMundial\GetMundialSeleccionQuery: sync
             App\Futbol\Application\Liga\GetLigasGpm\GetLigasGpmQuery:          sync
             App\Futbol\Application\Liga\GetEquiposLiga\GetEquiposLigaQuery:   sync
             App\Identity\Application\Outbox\List\ListOutboxQuery:           sync

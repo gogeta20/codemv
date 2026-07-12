@@ -1,0 +1,97 @@
+{
+  "top": [
+    {
+      "uuid": "aaa11111-0000-0000-0000-000000000001",
+      "posicion": 1,
+      "tipo": "mundial_top",
+      "fecha": "2026-06-15",
+      "razones": {
+        "ranking_gap": { "puntos": 4, "gap": 35 },
+        "elite_vs_debil": { "puntos": 3 },
+        "prob_pickcenter": { "puntos": 2, "prob": 0.72 },
+        "h2h_dominio": { "puntos": 1, "ratio": 0.65 },
+        "eliminacion": { "puntos": 0 }
+      },
+      "partido": {
+        "uuid": "bbb11111-0000-0000-0000-000000000001",
+        "espn_event_id": "700000001",
+        "fecha": "2026-06-15",
+        "hora_utc": "2026-06-15 18:00:00",
+        "equipo_local": "Brasil",
+        "equipo_visitante": "Arabia Saudita",
+        "estadio": "SoFi Stadium",
+        "estado": "programado",
+        "fase": "group_stage",
+        "grupo": "E",
+        "liga": { "nombre": "FIFA World Cup 2026", "codigo_espn": "fifa.world", "pais": "World", "division": "1" },
+        "tabla": {
+          "pos_local": 1, "pos_visitante": 3,
+          "pts_local": 3, "pts_visitante": 0,
+          "pj_local": 1, "pj_visitante": 1
+        },
+        "forma": { "local": null, "visitante": null },
+        "odds": { "local": 1.35, "empate": 4.5, "visitante": 9.0, "spread": -1.5, "over_under": 2.5 },
+        "probabilidades": { "local": 0.72, "empate": 0.18, "visitante": 0.10 },
+        "h2h": { "ganados_local": 5, "ganados_visitante": 1, "empates": 2, "detalle": [] },
+        "score_analisis": 10,
+        "score_detalle": {
+          "ranking_gap": { "puntos": 4 },
+          "elite_vs_debil": { "puntos": 3 },
+          "prob_pickcenter": { "puntos": 2 },
+          "h2h_dominio": { "puntos": 1 }
+        },
+        "resultado": { "goles_local": null, "goles_visitante": null, "goleadores": [] },
+        "lideres": null,
+        "corners": { "local": null, "visitante": null }
+      }
+    }
+  ],
+  "under": [
+    {
+      "uuid": "aaa22222-0000-0000-0000-000000000001",
+      "posicion": 1,
+      "tipo": "mundial_under",
+      "fecha": "2026-06-15",
+      "razones": {
+        "ou_bajo": { "puntos": 3, "over_under": 2.0 },
+        "prob_empate": { "puntos": 2, "prob": 0.38 },
+        "h2h_pocos_goles": { "puntos": 1 }
+      },
+      "partido": {
+        "uuid": "bbb22222-0000-0000-0000-000000000001",
+        "espn_event_id": "700000002",
+        "fecha": "2026-06-15",
+        "hora_utc": "2026-06-15 15:00:00",
+        "equipo_local": "Francia",
+        "equipo_visitante": "México",
+        "estadio": "MetLife Stadium",
+        "estado": "programado",
+        "fase": "group_stage",
+        "grupo": "D",
+        "liga": { "nombre": "FIFA World Cup 2026", "codigo_espn": "fifa.world", "pais": "World", "division": "1" },
+        "tabla": {
+          "pos_local": 1, "pos_visitante": 2,
+          "pts_local": 3, "pts_visitante": 1,
+          "pj_local": 1, "pj_visitante": 1
+        },
+        "forma": { "local": null, "visitante": null },
+        "odds": { "local": 1.9, "empate": 3.4, "visitante": 4.5, "spread": -0.5, "over_under": 2.0 },
+        "probabilidades": { "local": 0.48, "empate": 0.32, "visitante": 0.20 },
+        "h2h": { "ganados_local": 4, "ganados_visitante": 2, "empates": 4, "detalle": [] },
+        "score_analisis": 6,
+        "score_detalle": {
+          "ou_bajo": { "puntos": 3 },
+          "prob_empate": { "puntos": 2 },
+          "h2h_pocos_goles": { "puntos": 1 }
+        },
+        "score_under": 6,
+        "score_under_detalle": {
+          "xg_estimado": { "local": 1.1, "visitante": 0.8, "total_xg": 1.9 }
+        },
+        "resultado": { "goles_local": null, "goles_visitante": null, "goleadores": [] },
+        "lideres": null,
+        "corners": { "local": null, "visitante": null }
+      }
+    }
+  ]
+}

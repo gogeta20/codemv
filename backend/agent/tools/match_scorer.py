@@ -403,6 +403,138 @@ def score_under(partido: dict) -> tuple[int, dict]:
     return score, detalle
 
 
+def score_mundial_match(partido: dict, rankings: dict, fase: str = "group_stage") -> tuple[int, dict]:
+    """
+    Scoring para partidos del Mundial. Usa ranking FIFA como señal principal
+    en lugar de posición en tabla de temporada.
+    Devuelve (score_total, detalle).
+    """
+    score   = 0
+    detalle = {}
+
+    local = partido.get("equipo_local", "")
+    visit = partido.get("equipo_visitante", "")
+    rank_l = rankings.get(local, 60)
+    rank_v = rankings.get(visit, 60)
+    rank_diff = abs(rank_l - rank_v)
+
+    # --- Ranking FIFA: brecha entre selecciones ---
+    if rank_diff >= 30:
+        pts = 4
+    elif rank_diff >= 20:
+        pts = 3
+    elif rank_diff >= 10:
+        pts = 2
+    elif rank_diff >= 5:
+        pts = 1
+    else:
+        pts = 0
+    score += pts
+    detalle["ranking_fifa"] = {"local": rank_l, "visitante": rank_v, "diff": rank_diff, "puntos": pts}
+
+    # --- Elite vs débil: top 10 contra rank 30+ ---
+    if min(rank_l, rank_v) <= 10 and max(rank_l, rank_v) >= 30:
+        score += 3
+        detalle["elite_vs_debil"] = {"puntos": 3, "desc": f"Top10 vs Rank{max(rank_l,rank_v)}+"}
+
+    # --- Posición en grupo (solo fase de grupos) ---
+    if fase == "group_stage":
+        pos_l = partido.get("pos_local")
+        pos_v = partido.get("pos_visitante")
+        if pos_l is not None and pos_v is not None:
+            gap = abs(pos_l - pos_v)
+            pts = 2 if gap >= 2 else (1 if gap >= 1 else 0)
+            score += pts
+            detalle["pos_grupo"] = {"local": pos_l, "visitante": pos_v, "gap": gap, "puntos": pts}
+
+        # Última jornada: clasificación en juego = más caos
+        pj_l = partido.get("pj_local") or 0
+        if pj_l >= 2:
+            score -= 1
+            detalle["ultima_jornada"] = {"puntos": -1, "desc": "3ª jornada de grupos — resultados más imprevisibles"}
+
+    # --- Fase eliminatoria: sin empate posible ---
+    if fase != "group_stage":
+        score += 1
+        detalle["eliminatoria"] = {"puntos": 1, "desc": "Sin empate en tiempo reglamentario"}
+
+    # --- Probabilidad del pickcenter ---
+    prob_l = partido.get("prob_local")
+    prob_v = partido.get("prob_visitante")
+    prob_e = partido.get("prob_empate")
+    if prob_l is not None and prob_v is not None:
+        max_prob = max(prob_l, prob_v)
+        if max_prob >= 0.80:
+            pts = 3
+        elif max_prob >= 0.70:
+            pts = 2
+        elif max_prob >= 0.60:
+            pts = 1
+        elif max_prob < 0.45:
+            pts = -2
+        else:
+            pts = 0
+        score += pts
+        detalle["prob_espn"] = {"max_prob_pct": round(max_prob * 100, 1), "puntos": pts}
+
+        if prob_e is not None and prob_e >= 0.35:
+            score -= 2
+            detalle["empate_probable"] = {"prob_pct": round(prob_e * 100, 1), "puntos": -2}
+
+    # --- Odds ---
+    odds_l = partido.get("odds_local")
+    odds_v = partido.get("odds_visitante")
+    if odds_l is not None and odds_v is not None:
+        fav_prob = _fav_implied_prob(odds_l, odds_v)
+        if fav_prob >= 0.75:
+            pts = 3
+        elif fav_prob >= 0.65:
+            pts = 2
+        elif fav_prob >= 0.58:
+            pts = 1
+        elif fav_prob < 0.50:
+            pts = -1
+        else:
+            pts = 0
+        score += pts
+        detalle["odds"] = {"fav_prob_pct": round(fav_prob * 100, 1), "puntos": pts}
+
+    # --- H2H ---
+    h2h_l = partido.get("h2h_ganados_local", 0) or 0
+    h2h_v = partido.get("h2h_ganados_visitante", 0) or 0
+    h2h_e = partido.get("h2h_empates", 0) or 0
+    total_h2h = h2h_l + h2h_v + h2h_e
+    if total_h2h >= 3:
+        dominio = max(h2h_l, h2h_v) / total_h2h
+        if dominio >= 0.80:
+            pts = 2
+        elif dominio >= 0.60:
+            pts = 1
+        else:
+            pts = 0
+        if pts:
+            score += pts
+            detalle["h2h"] = {
+                "local": h2h_l, "visitante": h2h_v, "empates": h2h_e,
+                "dominio_pct": round(dominio * 100, 1), "puntos": pts,
+            }
+
+    return score, detalle
+
+
+def rank_mundial(partidos: list[dict], rankings: dict, top_n: int = 4) -> list[dict]:
+    """Puntúa y rankea partidos del Mundial. Devuelve top_n."""
+    import copy
+    ranked = copy.deepcopy(partidos)
+    for p in ranked:
+        fase = p.get("fase") or "group_stage"
+        score, detalle = score_mundial_match(p, rankings, fase)
+        p["score_analisis"] = score
+        p["score_detalle"]  = detalle
+    ranked.sort(key=lambda x: x["score_analisis"], reverse=True)
+    return ranked[:top_n]
+
+
 def rank_partidos_under(partidos: list[dict], top_n: int = 4) -> list[dict]:
     """Ordena por score_under y devuelve los top_n más defensivos."""
     import copy

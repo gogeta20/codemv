@@ -43,7 +43,7 @@ def run_agent(user_message: str):
         {"role": "user", "content": user_message},
     ]
 
-    print(f"\nUsuario: {user_message}\n")
+    print(f"\nUsuario: {user_message}\n")1
 
     while True:
         response = requests.post(

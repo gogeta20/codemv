@@ -109,6 +109,7 @@ def save_partido_futbol(p: dict) -> None:
                     score_analisis, score_detalle,
                     goles_local, goles_visitante, lideres,
                     corners_local, corners_visitante,
+                    fase, grupo,
                     created_at, updated_at
                 ) VALUES (
                     gen_random_uuid(), %s, %s, %s, %s,
@@ -120,6 +121,7 @@ def save_partido_futbol(p: dict) -> None:
                     %s, %s, %s, %s,
                     %s, %s,
                     %s, %s, %s,
+                    %s, %s,
                     %s, %s,
                     NOW(), NOW()
                 )
@@ -152,6 +154,8 @@ def save_partido_futbol(p: dict) -> None:
                     lideres              = EXCLUDED.lideres,
                     corners_local        = EXCLUDED.corners_local,
                     corners_visitante    = EXCLUDED.corners_visitante,
+                    fase             = EXCLUDED.fase,
+                    grupo            = EXCLUDED.grupo,
                     updated_at           = NOW()
             """, (
                 liga_id, p["espn_event_id"], p["fecha"], hora_utc,
@@ -171,6 +175,7 @@ def save_partido_futbol(p: dict) -> None:
                 json.dumps(p["lideres"]) if p.get("lideres") else None,
                 json.dumps(p["corners_local"]) if p.get("corners_local") else None,
                 json.dumps(p["corners_visitante"]) if p.get("corners_visitante") else None,
+                p.get("fase"), p.get("grupo"),
             ))
             conn.commit()
 
@@ -281,6 +286,35 @@ def get_or_create_liga(codigo_espn: str, nombre: str, pais: str) -> str:
                 VALUES (%s, %s, %s, %s, 1, false, NOW())
             """, (new_uuid, nombre, codigo_espn, pais))
             conn.commit()
+            return new_uuid
+
+
+def migrate_mundial_columns() -> None:
+    """Adds fase and grupo columns to futbol_partidos if they don't exist yet."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("ALTER TABLE futbol_partidos ADD COLUMN IF NOT EXISTS fase VARCHAR(30)")
+            cur.execute("ALTER TABLE futbol_partidos ADD COLUMN IF NOT EXISTS grupo VARCHAR(5)")
+            conn.commit()
+    print("[db] Columnas fase/grupo OK")
+
+
+def get_or_create_mundial_liga(codigo: str = "fifa.world", nombre: str = "FIFA World Cup 2026") -> str:
+    """Returns the uuid of the World Cup liga, inserting it if it doesn't exist."""
+    from uuid import uuid4
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT uuid FROM futbol_ligas WHERE codigo_espn = %s", (codigo,))
+            row = cur.fetchone()
+            if row:
+                return row[0]
+            new_uuid = str(uuid4())
+            cur.execute("""
+                INSERT INTO futbol_ligas (uuid, nombre, codigo_espn, pais, division, activa, created_at)
+                VALUES (%s, %s, %s, 'International', 1, true, NOW())
+            """, (new_uuid, nombre, codigo))
+            conn.commit()
+            print(f"[db] Liga '{nombre}' creada ({codigo})")
             return new_uuid
 
 

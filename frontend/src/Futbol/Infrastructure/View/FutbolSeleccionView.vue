@@ -6,6 +6,9 @@
         <span class="page__subtitle">{{ fechaDisplay }} — partidos elegidos para análisis</span>
       </div>
       <div class="page__actions">
+        <RouterLink to="/futbol/mundial">
+          <Button label="Mundial 2026" icon="pi pi-flag" severity="primary" size="small" />
+        </RouterLink>
         <RouterLink to="/futbol/ligas/gpm">
           <Button label="Ligas — goles/partido" icon="pi pi-globe" severity="secondary" size="small" />
         </RouterLink>

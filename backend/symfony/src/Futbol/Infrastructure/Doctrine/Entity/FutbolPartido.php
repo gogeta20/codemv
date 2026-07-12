@@ -136,6 +136,13 @@ class FutbolPartido
     #[ORM\Column(name: 'corners_visitante', type: 'json', nullable: true)]
     private ?array $cornersVisitante = null;
 
+    // --- Mundial 2026 ---
+    #[ORM\Column(type: 'string', length: 30, nullable: true)]
+    private ?string $fase = null; // group_stage | round_of_16 | quarter_final | semi_final | final
+
+    #[ORM\Column(type: 'string', length: 5, nullable: true)]
+    private ?string $grupo = null; // A | B | ... | L
+
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -201,6 +208,8 @@ class FutbolPartido
     public function getLideres(): ?array { return $this->lideres; }
     public function getCornersLocal(): ?array { return $this->cornersLocal; }
     public function getCornersVisitante(): ?array { return $this->cornersVisitante; }
+    public function getFase(): ?string { return $this->fase; }
+    public function getGrupo(): ?string { return $this->grupo; }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUpdatedAt(): \DateTime { return $this->updatedAt; }
 
@@ -235,6 +244,8 @@ class FutbolPartido
     public function setLideres(?array $lideres): void { $this->lideres = $lideres; }
     public function setCornersLocal(?array $v): void { $this->cornersLocal = $v; }
     public function setCornersVisitante(?array $v): void { $this->cornersVisitante = $v; }
+    public function setFase(?string $fase): void { $this->fase = $fase; }
+    public function setGrupo(?string $grupo): void { $this->grupo = $grupo; }
 
     public function toArray(): array
     {
@@ -291,6 +302,8 @@ class FutbolPartido
                 'local'      => $this->cornersLocal,
                 'visitante'  => $this->cornersVisitante,
             ],
+            'fase'             => $this->fase,
+            'grupo'            => $this->grupo,
             'created_at'       => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at'       => $this->updatedAt->format('Y-m-d H:i:s'),
         ];
