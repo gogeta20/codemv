@@ -7,8 +7,9 @@ Este documento es la **primera lectura obligatoria** antes de tocar código, lan
 1. Este archivo: `notas/normas.md`
 2. `CLAUDE.md`
 3. `notas/arrancar.md`
-4. `frontend/README.md`
-5. `notas/sessions/` → abrir la sesión más reciente por nombre
+4. `notas/comandos_agente.md`
+5. `frontend/README.md`
+6. `notas/sessions/` → abrir la sesión más reciente por nombre
 
 ## Qué es este proyecto hoy
 

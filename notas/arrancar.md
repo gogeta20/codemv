@@ -26,10 +26,13 @@ tail -f /tmp/futbol_seleccion.log    # análisis fútbol (cron diario)
 
 ```bash
 # Agente trading
-cd ~/projects/personal/IA/codemv/backend/agent && python3 main.py
+cd ~/projects/personal/IA/codemv && make agent-main
 
 # Análisis fútbol (selección del día)
-cd ~/projects/personal/IA/codemv/backend/agent && python3 steps/football_daily.py
+cd ~/projects/personal/IA/codemv && make agent-football
+
+# Análisis fútbol para mañana (útil para probar el cron de la 01:00)
+cd ~/projects/personal/IA/codemv && make agent-football-manana
 
 # Ranking de ligas mundiales por goles/partido ← ejecutar 1 vez por semana o al mes
 # Solo hace falta cuando quieres actualizar los datos de la vista /futbol/ligas/gpm
