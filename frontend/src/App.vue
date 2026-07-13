@@ -20,7 +20,7 @@
             <i class="pi pi-briefcase" />
           </RouterLink>
           <RouterLink to="/futbol/seleccion" v-tooltip.bottom="'Fútbol'">
-            <i class="pi pi-star" />
+            <span class="app-header__sport-ball" aria-hidden="true">⚽</span>
           </RouterLink>
           <RouterLink to="/pruebas" v-tooltip.bottom="'Pruebas'">
             <i class="pi pi-check-square" />
@@ -110,6 +110,11 @@ async function copyUuid() {
   text-decoration: none;
   font-size: 1rem;
   transition: color 0.15s, background 0.15s;
+}
+
+.app-header__sport-ball {
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .app-header__nav a:hover,
