@@ -1,5 +1,7 @@
 # Arrancar el entorno
 
+Antes de usar esta chuleta, leer primero `notas/normas.md`.
+
 ## Un solo comando
 
 ```bash
@@ -48,7 +50,7 @@ cd ~/projects/personal/IA/codemv/backend/agent && python3 seed_ligas.py
 
 ```
 07:00  15:00  18:00  22:00  →  Lunes a Viernes  →  agente trading (main.py)
-07:00  todos los días        →  análisis fútbol  (football_daily.py)
+01:00  todos los días        →  análisis fútbol  (football_daily.py)
 @reboot (+ 30s)              →  lookup server
 ```
 

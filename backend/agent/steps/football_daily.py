@@ -7,7 +7,7 @@ import requests
 from datetime import date, datetime, timedelta, timezone
 from tools.espn import get_scoreboard, get_standings, get_match_summary, get_team_corners_avg
 from tools.match_scorer import rank_partidos, rank_partidos_under
-from tools.telegram import send as telegram_send
+from tools.telegram import send_football as telegram_send
 from db import get_active_ligas, save_partido_futbol, save_seleccion_diaria, get_ligas_config
 
 OLLAMA_URL = "http://localhost:11434/api/chat"

@@ -8,6 +8,7 @@ TOKEN            = os.getenv('TELEGRAM_TOKEN', '')
 CHAT_ID          = os.getenv('TELEGRAM_CHAT_ID', '')           # Chat 1: resumen diario
 DISCOVER_CHAT_ID = os.getenv('TELEGRAM_DISCOVER_CHAT_ID', '')  # Chat 2: descubrimientos
 NEWS_CHAT_ID     = os.getenv('TELEGRAM_NEWS_CHAT_ID', '')      # Chat 3: noticias con catalizador
+FOOTBALL_CHAT_ID = os.getenv('TELEGRAM_FOOTBALL_CHAT_ID', '')  # Chat 4: futbol
 
 API_URL = f'https://api.telegram.org/bot{TOKEN}'
 
@@ -38,6 +39,12 @@ def send_discover(text: str, parse_mode: str = 'Markdown') -> bool:
 def send_news(text: str, parse_mode: str = 'Markdown') -> bool:
     """Chat 3 — solo noticias con catalizador real. Fallback al principal."""
     target = NEWS_CHAT_ID if NEWS_CHAT_ID and NEWS_CHAT_ID != 'PENDIENTE' else CHAT_ID
+    return send(text, parse_mode, chat_id=target)
+
+
+def send_football(text: str, parse_mode: str = 'Markdown') -> bool:
+    """Chat 4 — partidos de futbol. Fallback al principal si no esta configurado."""
+    target = FOOTBALL_CHAT_ID if FOOTBALL_CHAT_ID and FOOTBALL_CHAT_ID != 'PENDIENTE' else CHAT_ID
     return send(text, parse_mode, chat_id=target)
 
 
