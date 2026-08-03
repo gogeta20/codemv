@@ -64,6 +64,7 @@ final class GetEquiposLigaUseCase
             $total_gpm = round(($gf + $gc) / $pj, 2);
 
             $equipos[] = [
+                'espn_team_id' => (string) ($team['id'] ?? ''),
                 'pos'       => $i + 1,
                 'equipo'    => $team['displayName'] ?? '',
                 'abrev'     => $team['abbreviation'] ?? '',

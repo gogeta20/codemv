@@ -81,12 +81,12 @@
           <span class="dashboard-card__text">Entrar a la selección específica del mundial.</span>
         </RouterLink>
 
-        <div class="dashboard-card dashboard-card--ghost">
+        <RouterLink to="/futbol/ligas/esp.1/equipos/86/analisis" class="dashboard-card dashboard-card--ghost">
           <span class="dashboard-card__icon">🧠</span>
           <span class="dashboard-card__eyebrow">Siguiente</span>
           <strong class="dashboard-card__title">Analizador de equipos</strong>
-          <span class="dashboard-card__text">Backend listo. El siguiente paso será sacar la pantalla de detalle del equipo.</span>
-        </div>
+          <span class="dashboard-card__text">Abrir un ejemplo directo del analizador de equipo para validar los datos brutos del endpoint.</span>
+        </RouterLink>
       </div>
     </section>
 
