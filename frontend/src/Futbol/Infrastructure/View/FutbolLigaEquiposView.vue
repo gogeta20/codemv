@@ -35,7 +35,12 @@
             </div>
           </div>
           <div class="extremo-list">
-            <div v-for="(eq, i) in bottom5" :key="eq.equipo" class="equipo-card equipo-card--low">
+            <RouterLink
+              v-for="(eq, i) in bottom5"
+              :key="eq.espn_team_id || eq.equipo"
+              :to="eq.espn_team_id ? `/futbol/ligas/${route.params.codigo}/equipos/${eq.espn_team_id}/analisis` : '#'"
+              class="equipo-card equipo-card--low equipo-card--link"
+            >
               <span class="card-rank">{{ i + 1 }}</span>
               <div class="card-info">
                 <span class="card-nombre">{{ eq.equipo }}</span>
@@ -46,7 +51,7 @@
                 <div class="stat-pill stat-pill--def">🛡 {{ eq.gc_pj }}</div>
               </div>
               <span class="card-gpm card-gpm--low">{{ eq.total_gpm }}</span>
-            </div>
+            </RouterLink>
           </div>
         </div>
 
@@ -59,7 +64,12 @@
             </div>
           </div>
           <div class="extremo-list">
-            <div v-for="(eq, i) in top5" :key="eq.equipo" class="equipo-card equipo-card--high">
+            <RouterLink
+              v-for="(eq, i) in top5"
+              :key="eq.espn_team_id || eq.equipo"
+              :to="eq.espn_team_id ? `/futbol/ligas/${route.params.codigo}/equipos/${eq.espn_team_id}/analisis` : '#'"
+              class="equipo-card equipo-card--high equipo-card--link"
+            >
               <span class="card-rank">{{ i + 1 }}</span>
               <div class="card-info">
                 <span class="card-nombre">{{ eq.equipo }}</span>
@@ -70,7 +80,7 @@
                 <div class="stat-pill stat-pill--def">🛡 {{ eq.gc_pj }}</div>
               </div>
               <span class="card-gpm card-gpm--high">{{ eq.total_gpm }}</span>
-            </div>
+            </RouterLink>
           </div>
         </div>
       </div>
@@ -92,13 +102,14 @@
                 <th class="col-gfpj">GF/pj</th>
                 <th class="col-gcpj">GC/pj</th>
                 <th class="col-total">Total/pj</th>
+                <th class="col-analisis">Análisis</th>
                 <th class="col-bar"></th>
               </tr>
             </thead>
             <tbody>
               <tr
                 v-for="(eq, i) in data.equipos"
-                :key="eq.equipo"
+                :key="eq.espn_team_id || eq.equipo"
                 :class="rowClass(i, data.equipos.length)"
               >
                 <td class="col-rank">{{ i + 1 }}</td>
@@ -114,6 +125,15 @@
                 <td class="col-gcpj">{{ eq.gc_pj }}</td>
                 <td class="col-total">
                   <span class="total-pill" :class="totalClass(i, data.equipos.length)">{{ eq.total_gpm }}</span>
+                </td>
+                <td class="col-analisis">
+                  <RouterLink
+                    v-if="eq.espn_team_id"
+                    :to="`/futbol/ligas/${route.params.codigo}/equipos/${eq.espn_team_id}/analisis`"
+                  >
+                    <Button icon="pi pi-chart-bar" text size="small" />
+                  </RouterLink>
+                  <span v-else class="analisis-empty">—</span>
                 </td>
                 <td class="col-bar">
                   <div class="bar-wrap">
@@ -214,6 +234,13 @@ function barClass(i, total) {
   border-radius: 6px;
   border-left: 3px solid transparent;
 }
+.equipo-card--link {
+  text-decoration: none;
+  color: inherit;
+}
+.equipo-card--link:hover {
+  transform: translateY(-1px);
+}
 .equipo-card--low  { border-color: #7aa2f7; background: rgba(122,162,247,0.05); }
 .equipo-card--high { border-color: #f7768e; background: rgba(247,118,142,0.05); }
 
@@ -257,9 +284,11 @@ function barClass(i, total) {
 .col-rank   { width: 36px; color: var(--tokyo-fg-dim); font-weight: 700; text-align: center; }
 .col-pos    { width: 36px; color: var(--tokyo-fg-dim); text-align: center; }
 .col-equipo { font-weight: 600; }
+.col-analisis { width: 72px; text-align: center; }
 .col-pj, .col-pts, .col-gf, .col-gc { text-align: center; color: var(--tokyo-fg-dim); }
 .col-gfpj, .col-gcpj, .col-total { text-align: center; }
 .col-bar    { width: 100px; }
+.analisis-empty { color: var(--tokyo-fg-dim); }
 
 .gfpj-val { font-variant-numeric: tabular-nums; color: #9ece6a; font-weight: 600; }
 
