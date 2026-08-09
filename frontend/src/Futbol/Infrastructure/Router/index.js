@@ -34,6 +34,11 @@ export default [
     meta: { view: 'FutbolEquipoAnalisisView.vue', endpoint: 'GET /api/futbol/ligas/{codigo}/equipos/{teamId}/analisis' },
   },
   {
+    path: '/futbol/jugadores/:playerId',
+    component: () => import('@/Futbol/Infrastructure/View/FutbolJugadorAnalisisView.vue'),
+    meta: { view: 'FutbolJugadorAnalisisView.vue', endpoint: 'GET /api/futbol/jugadores/{playerId}/analisis' },
+  },
+  {
     path: '/futbol/mundial',
     component: () => import('@/Futbol/Infrastructure/View/MundialSeleccionView.vue'),
     meta: { view: 'MundialSeleccionView.vue', endpoint: 'GET /api/futbol/mundial/seleccion' },

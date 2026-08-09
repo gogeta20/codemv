@@ -66,7 +66,10 @@
             <tbody>
               <tr v-for="row in leaderRows" :key="row.key">
                 <td>{{ row.label }}</td>
-                <td>{{ row.player }}</td>
+                <td>
+                  <RouterLink v-if="playerId(row.player_href)" :to="`/futbol/jugadores/${playerId(row.player_href)}`">{{ row.player }}</RouterLink>
+                  <template v-else>{{ row.player }}</template>
+                </td>
                 <td>{{ row.main }}</td>
                 <td>{{ row.appearances }}</td>
                 <td>{{ row.extra }}</td>
@@ -94,7 +97,10 @@
               <tbody>
                 <tr v-for="row in data.tables?.top_scorers || []" :key="`${row.athlete?.uid}-${row.rank}`">
                   <td>{{ row.rank }}</td>
-                  <td>{{ row.athlete?.name }}</td>
+                  <td>
+                    <RouterLink v-if="playerId(row.athlete?.href)" :to="`/futbol/jugadores/${playerId(row.athlete?.href)}`">{{ row.athlete?.name }}</RouterLink>
+                    <template v-else>{{ row.athlete?.name }}</template>
+                  </td>
                   <td>{{ row.appearances }}</td>
                   <td>{{ row.totalGoals }}</td>
                 </tr>
@@ -120,7 +126,10 @@
               <tbody>
                 <tr v-for="row in data.tables?.top_assists || []" :key="`${row.athlete?.uid}-${row.rank}`">
                   <td>{{ row.rank }}</td>
-                  <td>{{ row.athlete?.name }}</td>
+                  <td>
+                    <RouterLink v-if="playerId(row.athlete?.href)" :to="`/futbol/jugadores/${playerId(row.athlete?.href)}`">{{ row.athlete?.name }}</RouterLink>
+                    <template v-else>{{ row.athlete?.name }}</template>
+                  </td>
                   <td>{{ row.appearances }}</td>
                   <td>{{ row.goalAssists }}</td>
                 </tr>
@@ -150,7 +159,10 @@
               <tbody>
                 <tr v-for="row in data.tables?.discipline || []" :key="`${row.athlete?.uid}-${row.rank}`">
                   <td>{{ row.rank }}</td>
-                  <td>{{ row.athlete?.name }}</td>
+                  <td>
+                    <RouterLink v-if="playerId(row.athlete?.href)" :to="`/futbol/jugadores/${playerId(row.athlete?.href)}`">{{ row.athlete?.name }}</RouterLink>
+                    <template v-else>{{ row.athlete?.name }}</template>
+                  </td>
                   <td>{{ row.appearances }}</td>
                   <td>{{ row.yellowCards }}</td>
                   <td>{{ row.redCards }}</td>
@@ -237,6 +249,7 @@ const leaderRows = computed(() => [
     key: 'top_scorer',
     label: 'top_scorer',
     player: data.value.leaders?.top_scorer?.player || '—',
+    player_href: data.value.leaders?.top_scorer?.player_href || null,
     main: data.value.leaders?.top_scorer?.goals ?? '—',
     appearances: data.value.leaders?.top_scorer?.appearances ?? '—',
     extra: data.value.leaders?.top_scorer?.per_match ?? '—',
@@ -245,6 +258,7 @@ const leaderRows = computed(() => [
     key: 'top_assister',
     label: 'top_assister',
     player: data.value.leaders?.top_assister?.player || '—',
+    player_href: data.value.leaders?.top_assister?.player_href || null,
     main: data.value.leaders?.top_assister?.assists ?? '—',
     appearances: data.value.leaders?.top_assister?.appearances ?? '—',
     extra: data.value.leaders?.top_assister?.per_match ?? '—',
@@ -253,6 +267,7 @@ const leaderRows = computed(() => [
     key: 'best_goals_per_match',
     label: 'best_goals_per_match',
     player: data.value.leaders?.best_goals_per_match?.player || '—',
+    player_href: data.value.leaders?.best_goals_per_match?.player_href || null,
     main: data.value.leaders?.best_goals_per_match?.goals ?? '—',
     appearances: data.value.leaders?.best_goals_per_match?.appearances ?? '—',
     extra: data.value.leaders?.best_goals_per_match?.goals_per_match ?? '—',
@@ -261,6 +276,7 @@ const leaderRows = computed(() => [
     key: 'most_yellow_cards',
     label: 'most_yellow_cards',
     player: data.value.leaders?.most_yellow_cards?.player || '—',
+    player_href: data.value.leaders?.most_yellow_cards?.player_href || null,
     main: data.value.leaders?.most_yellow_cards?.yellow_cards ?? '—',
     appearances: data.value.leaders?.most_yellow_cards?.appearances ?? '—',
     extra: 'YC',
@@ -269,6 +285,7 @@ const leaderRows = computed(() => [
     key: 'most_red_cards',
     label: 'most_red_cards',
     player: data.value.leaders?.most_red_cards?.player || '—',
+    player_href: data.value.leaders?.most_red_cards?.player_href || null,
     main: data.value.leaders?.most_red_cards?.red_cards ?? '—',
     appearances: data.value.leaders?.most_red_cards?.appearances ?? '—',
     extra: 'RC',
@@ -277,11 +294,17 @@ const leaderRows = computed(() => [
     key: 'discipline_points',
     label: 'discipline_points',
     player: data.value.leaders?.discipline_points?.player || '—',
+    player_href: data.value.leaders?.discipline_points?.player_href || null,
     main: data.value.leaders?.discipline_points?.points ?? '—',
     appearances: data.value.leaders?.discipline_points?.appearances ?? '—',
     extra: 'Pts',
   },
 ])
+
+function playerId(href) {
+  const match = href?.match(/\/id\/(\d+)\//)
+  return match ? match[1] : null
+}
 
 const performanceTables = computed(() => {
   const performance = data.value.tables?.performance || {}

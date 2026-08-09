@@ -4,7 +4,7 @@ from datetime import date, datetime, timezone
 BASE_SITE = "https://site.api.espn.com/apis/site/v2/sports/soccer"
 BASE_V2   = "https://site.api.espn.com/apis/v2/sports/soccer"
 
-HEADERS = {"User-Agent": "Mozilla/5.0"}
+HEADERS = {"User-Agent": "curl/8.5.0"}
 TIMEOUT = 15
 
 
