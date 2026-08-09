@@ -7,14 +7,52 @@
           {{ data.team?.name || route.params.teamId }} · {{ data.league?.name || route.params.codigo?.toUpperCase() }}
         </span>
       </div>
-      <div class="page__actions">
+      <div class="page__actions" v-if="route.params.codigo">
         <RouterLink :to="`/futbol/ligas/${route.params.codigo}/equipos`">
           <Button label="Volver a equipos" icon="pi pi-arrow-left" severity="secondary" size="small" />
         </RouterLink>
       </div>
     </div>
 
-    <div v-if="loading" class="loading-state">
+    <section class="panel picker">
+      <div class="section-head">
+        <h2 class="section-title">Buscar equipo</h2>
+      </div>
+      <div class="picker-row">
+        <Select
+          v-model="ligaSeleccionada"
+          :options="LIGAS"
+          optionLabel="label"
+          optionValue="code"
+          placeholder="Selecciona una liga..."
+          class="picker-liga"
+          filter
+          @change="onLigaChange"
+        />
+        <Select
+          v-model="equipoSeleccionado"
+          :options="equiposLiga"
+          optionLabel="team_name"
+          :placeholder="loadingEquipos ? 'Cargando...' : 'Elige equipo...'"
+          :disabled="!ligaSeleccionada || loadingEquipos"
+          class="picker-equipo"
+          filter
+        />
+        <Button
+          label="Analizar"
+          icon="pi pi-search"
+          size="small"
+          :disabled="!equipoSeleccionado"
+          @click="irAAnalisis"
+        />
+      </div>
+    </section>
+
+    <div v-if="!route.params.teamId" class="empty-state">
+      Selecciona una liga y un equipo para ver su análisis.
+    </div>
+
+    <div v-else-if="loading" class="loading-state">
       <i class="pi pi-spin pi-spinner" /> Cargando análisis del equipo...
     </div>
 
@@ -22,7 +60,7 @@
       {{ error }}
     </div>
 
-    <template v-else>
+    <template v-else-if="data.team">
       <section class="panel">
         <div class="section-head">
           <h2 class="section-title">Resumen bruto</h2>
@@ -234,15 +272,45 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { computed, ref, onMounted, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
+import Select from 'primevue/select'
 import { GetEquipoAnalisisUseCase } from '@/Futbol/Application/UseCase/GetEquipoAnalisis/GetEquipoAnalisisUseCase'
+import { GetTeamsByLigaUseCase } from '@/Futbol/Application/UseCase/GetTeamsByLiga/GetTeamsByLigaUseCase'
+import { LIGAS } from '@/Futbol/Infrastructure/constants/ligas'
 
 const route = useRoute()
-const loading = ref(true)
+const router = useRouter()
+const loading = ref(!!route.params.teamId)
 const error = ref('')
 const data = ref({ team: null, league: null, season: null, coverage: null, leaders: {}, tables: {} })
+
+const ligaSeleccionada = ref(route.params.codigo || null)
+const equipoSeleccionado = ref(null)
+const equiposLiga = ref([])
+const loadingEquipos = ref(false)
+
+async function onLigaChange() {
+  equipoSeleccionado.value = null
+  equiposLiga.value = []
+  if (!ligaSeleccionada.value) return
+  loadingEquipos.value = true
+  try {
+    equiposLiga.value = await GetTeamsByLigaUseCase(ligaSeleccionada.value)
+  } finally {
+    loadingEquipos.value = false
+  }
+}
+
+function irAAnalisis() {
+  if (!ligaSeleccionada.value || !equipoSeleccionado.value) return
+  router.push(`/futbol/ligas/${ligaSeleccionada.value}/equipos/${equipoSeleccionado.value.espn_team_id}/analisis`)
+}
+
+if (ligaSeleccionada.value) {
+  onLigaChange()
+}
 
 const leaderRows = computed(() => [
   {
@@ -327,7 +395,10 @@ const debugPayload = computed(() => JSON.stringify({
   available_views: data.value.available_views,
 }, null, 2))
 
-onMounted(async () => {
+async function cargarAnalisis() {
+  if (!route.params.codigo || !route.params.teamId) return
+  loading.value = true
+  error.value = ''
   try {
     data.value = await GetEquipoAnalisisUseCase({
       liga: route.params.codigo,
@@ -339,7 +410,10 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(cargarAnalisis)
+watch(() => [route.params.codigo, route.params.teamId], cargarAnalisis)
 
 function formatCell(value) {
   if (value === null || value === undefined || value === '') {
@@ -356,6 +430,9 @@ function formatCell(value) {
 
 <style scoped>
 .loading-state, .empty-state { color: var(--tokyo-fg-dim); padding: var(--space-8); text-align: center; }
+.picker { margin-bottom: var(--space-5); }
+.picker-row { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.picker-liga, .picker-equipo { flex: 1; min-width: 220px; }
 .section-head { margin-bottom: var(--space-3); }
 .section-title { margin: 0; font-size: 1rem; }
 .meta-grid, .tables-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-5); }

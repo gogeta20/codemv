@@ -13,7 +13,7 @@ final class GetTeamsByLigaUseCase
     public function execute(string $ligaCode): array
     {
         $response = $this->httpClient->request('GET', sprintf(self::ESPN_TEAMS, $ligaCode), [
-            'headers' => ['User-Agent' => 'Mozilla/5.0'],
+            'headers' => ['User-Agent' => 'curl/8.5.0'],
             'timeout' => 8,
         ]);
 

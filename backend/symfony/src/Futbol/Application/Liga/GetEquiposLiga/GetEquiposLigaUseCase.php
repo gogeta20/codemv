@@ -13,7 +13,7 @@ final class GetEquiposLigaUseCase
     public function execute(string $codigo): array
     {
         $response = $this->httpClient->request('GET', sprintf(self::ESPN_URL, $codigo), [
-            'headers' => ['User-Agent' => 'Mozilla/5.0'],
+            'headers' => ['User-Agent' => 'curl/8.5.0'],
             'timeout' => 10,
         ]);
 

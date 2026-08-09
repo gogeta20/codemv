@@ -25,7 +25,7 @@ final class GetFavoritosPartidosUseCase
 
             try {
                 $response = $this->httpClient->request('GET', $url, [
-                    'headers' => ['User-Agent' => 'Mozilla/5.0'],
+                    'headers' => ['User-Agent' => 'curl/8.5.0'],
                     'timeout' => 8,
                 ]);
                 $data   = $response->toArray();

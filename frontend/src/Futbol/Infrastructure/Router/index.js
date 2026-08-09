@@ -29,6 +29,11 @@ export default [
     meta: { view: 'FutbolLigaEquiposView.vue', endpoint: 'GET /api/futbol/ligas/{codigo}/equipos' },
   },
   {
+    path: '/futbol/analizador',
+    component: () => import('@/Futbol/Infrastructure/View/FutbolEquipoAnalisisView.vue'),
+    meta: { view: 'FutbolEquipoAnalisisView.vue', endpoint: 'GET /api/futbol/ligas/{codigo}/equipos/{teamId}/analisis' },
+  },
+  {
     path: '/futbol/ligas/:codigo/equipos/:teamId/analisis',
     component: () => import('@/Futbol/Infrastructure/View/FutbolEquipoAnalisisView.vue'),
     meta: { view: 'FutbolEquipoAnalisisView.vue', endpoint: 'GET /api/futbol/ligas/{codigo}/equipos/{teamId}/analisis' },
