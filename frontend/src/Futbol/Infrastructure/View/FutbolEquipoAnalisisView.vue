@@ -7,14 +7,52 @@
           {{ data.team?.name || route.params.teamId }} · {{ data.league?.name || route.params.codigo?.toUpperCase() }}
         </span>
       </div>
-      <div class="page__actions">
+      <div class="page__actions" v-if="route.params.codigo">
         <RouterLink :to="`/futbol/ligas/${route.params.codigo}/equipos`">
           <Button label="Volver a equipos" icon="pi pi-arrow-left" severity="secondary" size="small" />
         </RouterLink>
       </div>
     </div>
 
-    <div v-if="loading" class="loading-state">
+    <section class="panel picker">
+      <div class="section-head">
+        <h2 class="section-title">Buscar equipo</h2>
+      </div>
+      <div class="picker-row">
+        <Select
+          v-model="ligaSeleccionada"
+          :options="LIGAS"
+          optionLabel="label"
+          optionValue="code"
+          placeholder="Selecciona una liga..."
+          class="picker-liga"
+          filter
+          @change="onLigaChange"
+        />
+        <Select
+          v-model="equipoSeleccionado"
+          :options="equiposLiga"
+          optionLabel="team_name"
+          :placeholder="loadingEquipos ? 'Cargando...' : 'Elige equipo...'"
+          :disabled="!ligaSeleccionada || loadingEquipos"
+          class="picker-equipo"
+          filter
+        />
+        <Button
+          label="Analizar"
+          icon="pi pi-search"
+          size="small"
+          :disabled="!equipoSeleccionado"
+          @click="irAAnalisis"
+        />
+      </div>
+    </section>
+
+    <div v-if="!route.params.teamId" class="empty-state">
+      Selecciona una liga y un equipo para ver su análisis.
+    </div>
+
+    <div v-else-if="loading" class="loading-state">
       <i class="pi pi-spin pi-spinner" /> Cargando análisis del equipo...
     </div>
 
@@ -22,7 +60,7 @@
       {{ error }}
     </div>
 
-    <template v-else>
+    <template v-else-if="data.team">
       <section class="panel">
         <div class="section-head">
           <h2 class="section-title">Resumen bruto</h2>
@@ -66,7 +104,10 @@
             <tbody>
               <tr v-for="row in leaderRows" :key="row.key">
                 <td>{{ row.label }}</td>
-                <td>{{ row.player }}</td>
+                <td>
+                  <RouterLink v-if="playerId(row.player_href)" :to="`/futbol/jugadores/${playerId(row.player_href)}`">{{ row.player }}</RouterLink>
+                  <template v-else>{{ row.player }}</template>
+                </td>
                 <td>{{ row.main }}</td>
                 <td>{{ row.appearances }}</td>
                 <td>{{ row.extra }}</td>
@@ -94,7 +135,10 @@
               <tbody>
                 <tr v-for="row in data.tables?.top_scorers || []" :key="`${row.athlete?.uid}-${row.rank}`">
                   <td>{{ row.rank }}</td>
-                  <td>{{ row.athlete?.name }}</td>
+                  <td>
+                    <RouterLink v-if="playerId(row.athlete?.href)" :to="`/futbol/jugadores/${playerId(row.athlete?.href)}`">{{ row.athlete?.name }}</RouterLink>
+                    <template v-else>{{ row.athlete?.name }}</template>
+                  </td>
                   <td>{{ row.appearances }}</td>
                   <td>{{ row.totalGoals }}</td>
                 </tr>
@@ -120,7 +164,10 @@
               <tbody>
                 <tr v-for="row in data.tables?.top_assists || []" :key="`${row.athlete?.uid}-${row.rank}`">
                   <td>{{ row.rank }}</td>
-                  <td>{{ row.athlete?.name }}</td>
+                  <td>
+                    <RouterLink v-if="playerId(row.athlete?.href)" :to="`/futbol/jugadores/${playerId(row.athlete?.href)}`">{{ row.athlete?.name }}</RouterLink>
+                    <template v-else>{{ row.athlete?.name }}</template>
+                  </td>
                   <td>{{ row.appearances }}</td>
                   <td>{{ row.goalAssists }}</td>
                 </tr>
@@ -150,7 +197,10 @@
               <tbody>
                 <tr v-for="row in data.tables?.discipline || []" :key="`${row.athlete?.uid}-${row.rank}`">
                   <td>{{ row.rank }}</td>
-                  <td>{{ row.athlete?.name }}</td>
+                  <td>
+                    <RouterLink v-if="playerId(row.athlete?.href)" :to="`/futbol/jugadores/${playerId(row.athlete?.href)}`">{{ row.athlete?.name }}</RouterLink>
+                    <template v-else>{{ row.athlete?.name }}</template>
+                  </td>
                   <td>{{ row.appearances }}</td>
                   <td>{{ row.yellowCards }}</td>
                   <td>{{ row.redCards }}</td>
@@ -222,21 +272,52 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { computed, ref, onMounted, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
+import Select from 'primevue/select'
 import { GetEquipoAnalisisUseCase } from '@/Futbol/Application/UseCase/GetEquipoAnalisis/GetEquipoAnalisisUseCase'
+import { GetTeamsByLigaUseCase } from '@/Futbol/Application/UseCase/GetTeamsByLiga/GetTeamsByLigaUseCase'
+import { LIGAS } from '@/Futbol/Infrastructure/constants/ligas'
 
 const route = useRoute()
-const loading = ref(true)
+const router = useRouter()
+const loading = ref(!!route.params.teamId)
 const error = ref('')
 const data = ref({ team: null, league: null, season: null, coverage: null, leaders: {}, tables: {} })
+
+const ligaSeleccionada = ref(route.params.codigo || null)
+const equipoSeleccionado = ref(null)
+const equiposLiga = ref([])
+const loadingEquipos = ref(false)
+
+async function onLigaChange() {
+  equipoSeleccionado.value = null
+  equiposLiga.value = []
+  if (!ligaSeleccionada.value) return
+  loadingEquipos.value = true
+  try {
+    equiposLiga.value = await GetTeamsByLigaUseCase(ligaSeleccionada.value)
+  } finally {
+    loadingEquipos.value = false
+  }
+}
+
+function irAAnalisis() {
+  if (!ligaSeleccionada.value || !equipoSeleccionado.value) return
+  router.push(`/futbol/ligas/${ligaSeleccionada.value}/equipos/${equipoSeleccionado.value.espn_team_id}/analisis`)
+}
+
+if (ligaSeleccionada.value) {
+  onLigaChange()
+}
 
 const leaderRows = computed(() => [
   {
     key: 'top_scorer',
     label: 'top_scorer',
     player: data.value.leaders?.top_scorer?.player || '—',
+    player_href: data.value.leaders?.top_scorer?.player_href || null,
     main: data.value.leaders?.top_scorer?.goals ?? '—',
     appearances: data.value.leaders?.top_scorer?.appearances ?? '—',
     extra: data.value.leaders?.top_scorer?.per_match ?? '—',
@@ -245,6 +326,7 @@ const leaderRows = computed(() => [
     key: 'top_assister',
     label: 'top_assister',
     player: data.value.leaders?.top_assister?.player || '—',
+    player_href: data.value.leaders?.top_assister?.player_href || null,
     main: data.value.leaders?.top_assister?.assists ?? '—',
     appearances: data.value.leaders?.top_assister?.appearances ?? '—',
     extra: data.value.leaders?.top_assister?.per_match ?? '—',
@@ -253,6 +335,7 @@ const leaderRows = computed(() => [
     key: 'best_goals_per_match',
     label: 'best_goals_per_match',
     player: data.value.leaders?.best_goals_per_match?.player || '—',
+    player_href: data.value.leaders?.best_goals_per_match?.player_href || null,
     main: data.value.leaders?.best_goals_per_match?.goals ?? '—',
     appearances: data.value.leaders?.best_goals_per_match?.appearances ?? '—',
     extra: data.value.leaders?.best_goals_per_match?.goals_per_match ?? '—',
@@ -261,6 +344,7 @@ const leaderRows = computed(() => [
     key: 'most_yellow_cards',
     label: 'most_yellow_cards',
     player: data.value.leaders?.most_yellow_cards?.player || '—',
+    player_href: data.value.leaders?.most_yellow_cards?.player_href || null,
     main: data.value.leaders?.most_yellow_cards?.yellow_cards ?? '—',
     appearances: data.value.leaders?.most_yellow_cards?.appearances ?? '—',
     extra: 'YC',
@@ -269,6 +353,7 @@ const leaderRows = computed(() => [
     key: 'most_red_cards',
     label: 'most_red_cards',
     player: data.value.leaders?.most_red_cards?.player || '—',
+    player_href: data.value.leaders?.most_red_cards?.player_href || null,
     main: data.value.leaders?.most_red_cards?.red_cards ?? '—',
     appearances: data.value.leaders?.most_red_cards?.appearances ?? '—',
     extra: 'RC',
@@ -277,11 +362,17 @@ const leaderRows = computed(() => [
     key: 'discipline_points',
     label: 'discipline_points',
     player: data.value.leaders?.discipline_points?.player || '—',
+    player_href: data.value.leaders?.discipline_points?.player_href || null,
     main: data.value.leaders?.discipline_points?.points ?? '—',
     appearances: data.value.leaders?.discipline_points?.appearances ?? '—',
     extra: 'Pts',
   },
 ])
+
+function playerId(href) {
+  const match = href?.match(/\/id\/(\d+)\//)
+  return match ? match[1] : null
+}
 
 const performanceTables = computed(() => {
   const performance = data.value.tables?.performance || {}
@@ -304,7 +395,10 @@ const debugPayload = computed(() => JSON.stringify({
   available_views: data.value.available_views,
 }, null, 2))
 
-onMounted(async () => {
+async function cargarAnalisis() {
+  if (!route.params.codigo || !route.params.teamId) return
+  loading.value = true
+  error.value = ''
   try {
     data.value = await GetEquipoAnalisisUseCase({
       liga: route.params.codigo,
@@ -316,7 +410,10 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(cargarAnalisis)
+watch(() => [route.params.codigo, route.params.teamId], cargarAnalisis)
 
 function formatCell(value) {
   if (value === null || value === undefined || value === '') {
@@ -333,6 +430,9 @@ function formatCell(value) {
 
 <style scoped>
 .loading-state, .empty-state { color: var(--tokyo-fg-dim); padding: var(--space-8); text-align: center; }
+.picker { margin-bottom: var(--space-5); }
+.picker-row { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.picker-liga, .picker-equipo { flex: 1; min-width: 220px; }
 .section-head { margin-bottom: var(--space-3); }
 .section-title { margin: 0; font-size: 1rem; }
 .meta-grid, .tables-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-5); }

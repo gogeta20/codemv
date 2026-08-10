@@ -81,11 +81,11 @@
           <span class="dashboard-card__text">Entrar a la selección específica del mundial.</span>
         </RouterLink>
 
-        <RouterLink to="/futbol/ligas/esp.1/equipos/86/analisis" class="dashboard-card dashboard-card--ghost">
+        <RouterLink to="/futbol/analizador" class="dashboard-card">
           <span class="dashboard-card__icon">🧠</span>
-          <span class="dashboard-card__eyebrow">Siguiente</span>
+          <span class="dashboard-card__eyebrow">Buscar</span>
           <strong class="dashboard-card__title">Analizador de equipos</strong>
-          <span class="dashboard-card__text">Abrir un ejemplo directo del analizador de equipo para validar los datos brutos del endpoint.</span>
+          <span class="dashboard-card__text">Elegir liga y equipo para ver goleadores, disciplina y fichas de jugador.</span>
         </RouterLink>
       </div>
     </section>
@@ -244,34 +244,9 @@ import { AddFavoritoUseCase } from '@/Futbol/Application/UseCase/AddFavorito/Add
 import { RemoveFavoritoUseCase } from '@/Futbol/Application/UseCase/RemoveFavorito/RemoveFavoritoUseCase'
 import { GetFavoritosPartidosUseCase } from '@/Futbol/Application/UseCase/GetFavoritosPartidos/GetFavoritosPartidosUseCase'
 import { GetTeamsByLigaUseCase } from '@/Futbol/Application/UseCase/GetTeamsByLiga/GetTeamsByLigaUseCase'
+import { LIGAS } from '@/Futbol/Infrastructure/constants/ligas'
 
 const toast = useToast()
-
-const LIGAS = [
-  { label: 'Alemania — Bundesliga',       code: 'ger.1' },
-  { label: 'Alemania — 2. Bundesliga',    code: 'ger.2' },
-  { label: 'Argentina — Liga Profesional',code: 'arg.1' },
-  { label: 'Australia — A-League',        code: 'aus.1' },
-  { label: 'Bélgica — First Division A',  code: 'bel.1' },
-  { label: 'Bolivia — Liga Profesional',  code: 'bol.1' },
-  { label: 'Brasil — Série A',            code: 'bra.1' },
-  { label: 'Dinamarca — Superliga',       code: 'den.1' },
-  { label: 'Escocia — Premiership',       code: 'sco.1' },
-  { label: 'España — La Liga',            code: 'esp.1' },
-  { label: 'España — Segunda División',   code: 'esp.2' },
-  { label: 'Francia — Ligue 1',           code: 'fra.1' },
-  { label: 'Inglaterra — Premier League', code: 'eng.1' },
-  { label: 'Inglaterra — Championship',   code: 'eng.2' },
-  { label: 'Italia — Serie A',            code: 'ita.1' },
-  { label: 'Italia — Serie B',            code: 'ita.2' },
-  { label: 'México — Liga MX',            code: 'mex.1' },
-  { label: 'MLS',                         code: 'usa.1' },
-  { label: 'Noruega — Eliteserien',       code: 'nor.1' },
-  { label: 'Países Bajos — Eredivisie',   code: 'ned.1' },
-  { label: 'Portugal — Primeira Liga',    code: 'por.1' },
-  { label: 'Suecia — Allsvenskan',        code: 'swe.1' },
-  { label: 'Turquía — Süper Lig',         code: 'tur.1' },
-]
 
 const loading         = ref(true)
 const tabActivo       = ref(0)
