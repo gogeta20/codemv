@@ -1,0 +1,5 @@
+[
+  { "uuid": "mock-esp-1", "nombre": "España — La Liga", "codigo_espn": "esp.1", "pais": "España", "division": 1, "activa": true },
+  { "uuid": "mock-eng-1", "nombre": "Inglaterra — Premier League", "codigo_espn": "eng.1", "pais": "Inglaterra", "division": 1, "activa": true },
+  { "uuid": "mock-fra-1", "nombre": "Francia — Ligue 1", "codigo_espn": "fra.1", "pais": "Francia", "division": 1, "activa": false }
+]

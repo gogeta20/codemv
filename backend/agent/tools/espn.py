@@ -37,9 +37,13 @@ def get_scoreboard(liga: str, fecha: date = None) -> list[dict]:
         status_type = ev.get("status", {}).get("type", {})
         estado = _map_estado(status_type.get("name", ""))
 
-        # Score si ya terminó o está en juego
-        goles_local     = _safe_int(home.get("score"))
-        goles_visitante = _safe_int(away.get("score"))
+        # Score solo si ya terminó o está en juego — ESPN devuelve "0" también para partidos programados
+        if estado in ("en_juego", "finalizado"):
+            goles_local     = _safe_int(home.get("score"))
+            goles_visitante = _safe_int(away.get("score"))
+        else:
+            goles_local     = None
+            goles_visitante = None
 
         # Odds del scoreboard (básicas — el summary tiene más detalle)
         raw_odds = comp.get("odds", [{}])
@@ -200,67 +204,55 @@ def get_match_summary(liga: str, event_id: str) -> dict:
     }
 
     # --- H2H ---
-    # ESPN returns [{team, events[{gameDate,score,homeTeamId,awayTeamId,gameResult,...}]}]
-    # gameResult is from the perspective of `team` (W/L/D/T)
-    h2h_entries = data.get("headToHeadGames", [])
-    if h2h_entries:
-        # Use the first team entry (home team of current match)
-        entry  = h2h_entries[0]
-        events = entry.get("events", [])
+    # ESPN expone esto bajo "seasonseries" (type: "head-to-head"). La clave "headToHeadGames"
+    # que se usaba antes ya no existe en la respuesta actual del endpoint /summary.
+    home_id = away_id = None
+    for comp in data.get("header", {}).get("competitions", [{}]):
+        for c in comp.get("competitors", []):
+            if c.get("homeAway") == "home":
+                home_id = str(c.get("team", {}).get("id", ""))
+            elif c.get("homeAway") == "away":
+                away_id = str(c.get("team", {}).get("id", ""))
 
-        # Resolve home team id from header competitors
-        home_id = away_id = None
-        for comp in data.get("header", {}).get("competitions", [{}]):
-            for c in comp.get("competitors", []):
-                if c.get("homeAway") == "home":
-                    home_id = str(c.get("team", {}).get("id", ""))
-                elif c.get("homeAway") == "away":
-                    away_id = str(c.get("team", {}).get("id", ""))
-
-        ref_team_id = str(entry.get("team", {}).get("id", ""))
-        # Is the ref team today's home team? (determines how to map W/L to wins_home/wins_away)
-        ref_is_current_home = ref_team_id == home_id
-
+    h2h_series = next((s for s in data.get("seasonseries", []) if s.get("type") == "head-to-head"), None)
+    if h2h_series and h2h_series.get("events"):
         detalle = []
         wins_home = wins_away = empates = 0
 
-        for ev in events[:5]:
-            g_home_id   = str(ev.get("homeTeamId", ""))
-            home_score  = ev.get("homeTeamScore", "?")
-            away_score  = ev.get("awayTeamScore", "?")
-            game_result = ev.get("gameResult", "")     # W/L/D/T from ref_team_id perspective
-            game_date   = (ev.get("gameDate") or "")[:10]
-            opponent    = ev.get("opponent", {})
+        for ev in h2h_series["events"][:5]:
+            competitors = ev.get("competitors", [])
+            hist_home = next((c for c in competitors if c.get("homeAway") == "home"), None)
+            hist_away = next((c for c in competitors if c.get("homeAway") == "away"), None)
+            if not hist_home or not hist_away:
+                continue
 
-            # Build local/visitante display names using who was home in the historical match
-            ref_name = entry.get("team", {}).get("displayName", "")
-            opp_name = opponent.get("displayName", "")
-            if g_home_id == ref_team_id:
-                local_name, visit_name = ref_name, opp_name
+            local_name = hist_home.get("team", {}).get("displayName", "")
+            visit_name = hist_away.get("team", {}).get("displayName", "")
+            score_str  = f"{hist_home.get('score', '?')}-{hist_away.get('score', '?')}"
+            game_date  = (ev.get("date") or "")[:10]
+
+            home_won = bool(hist_home.get("winner"))
+            away_won = bool(hist_away.get("winner"))
+            hist_home_id = str(hist_home.get("team", {}).get("id", ""))
+            hist_away_id = str(hist_away.get("team", {}).get("id", ""))
+
+            # ¿Ganó ese partido histórico el equipo que HOY juega de local? (por id, no por lado histórico)
+            if hist_home_id == home_id:
+                today_home_won = home_won
+            elif hist_away_id == home_id:
+                today_home_won = away_won
             else:
-                local_name, visit_name = opp_name, ref_name
+                today_home_won = None
 
-            # Score is always homeTeamScore-awayTeamScore (matches local-visitante display)
-            score_str = f"{home_score}-{away_score}"
-
-            # Map game_result (from ref's perspective) to wins_home / wins_away for today's match
-            if game_result in ("T", "D"):
+            if not home_won and not away_won:
                 result_str = "D"
                 empates += 1
-            elif game_result == "W":
-                if ref_is_current_home:
-                    result_str = "W"
-                    wins_home += 1
-                else:
-                    result_str = "L"
-                    wins_away += 1
+            elif today_home_won:
+                result_str = "W"
+                wins_home += 1
             else:
-                if ref_is_current_home:
-                    result_str = "L"
-                    wins_away += 1
-                else:
-                    result_str = "W"
-                    wins_home += 1
+                result_str = "L"
+                wins_away += 1
 
             detalle.append({
                 "fecha":     game_date,

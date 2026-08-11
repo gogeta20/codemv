@@ -4,7 +4,7 @@
     <div class="leyenda-grid">
       <div class="leyenda-item">
         <span class="term">Odds</span>
-        <span class="def">Cuotas en formato moneyline americano. Negativo = favorito (ej: -190 significa apostar 190 para ganar 100). Positivo = underdog (ej: +425 = ganar 425 por cada 100).</span>
+        <span class="def">Cuotas decimales. Ej: 1.32 significa que por cada 1 apostado se cobran 1.32 si gana (cuanto más baja, más favorito). El % junto a cada cuota es la probabilidad implícita (1 / cuota); la suma de las 3 supera 100% por el margen de la casa.</span>
       </div>
       <div class="leyenda-item">
         <span class="term">Prob</span>

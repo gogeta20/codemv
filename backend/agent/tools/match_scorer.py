@@ -290,7 +290,7 @@ def score_match(partido: dict, total_equipos: int = 20, ignorar_temporada: bool 
     return score, detalle
 
 
-def rank_partidos(partidos: list[dict], top_n: int = 4, ignorar_temporada: bool = False) -> list[dict]:
+def rank_partidos(partidos: list[dict], top_n: int = 8, ignorar_temporada: bool = False) -> list[dict]:
     """Puntúa, ordena y devuelve los top_n con score y detalle añadidos."""
     import copy
     ranked = copy.deepcopy(partidos)
@@ -535,7 +535,7 @@ def rank_mundial(partidos: list[dict], rankings: dict, top_n: int = 4) -> list[d
     return ranked[:top_n]
 
 
-def rank_partidos_under(partidos: list[dict], top_n: int = 4) -> list[dict]:
+def rank_partidos_under(partidos: list[dict], top_n: int = 8) -> list[dict]:
     """Ordena por score_under y devuelve los top_n más defensivos."""
     import copy
     ranked = copy.deepcopy(partidos)
