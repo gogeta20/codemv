@@ -1,0 +1,167 @@
+{
+  "report": {
+    "uuid": "2b4c4cbd-6a83-495e-ac83-4448efb67d41",
+    "symbol": "PLTR",
+    "company_name": "Palantir Technologies Inc.",
+    "form_type": "8-K",
+    "filing_date": "2026-08-03",
+    "report_date": "2026-06-30",
+    "source": "sec",
+    "source_url": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000039/a2026q2ex991pressrelease.htm",
+    "period_label": "Q2 2026"
+  },
+  "verdict": {
+    "signal": "good",
+    "score": 84,
+    "label": "Reporte fuerte",
+    "summary": "El trimestre sale claramente mejor de lo esperado por crecimiento, margen y caja. La parte buena domina, aunque hay que vigilar si este ritmo es sostenible y cuánto depende del momentum comercial en EE. UU."
+  },
+  "highlights": {
+    "good": [
+      "Revenue +93% YoY, muy por encima de un trimestre normal para una empresa ya grande.",
+      "EPS ajustado y GAAP alineados, sin una brecha artificial grande entre beneficio reportado y ajustado.",
+      "La compañía sube guidance anual, lo que refuerza que el trimestre no parece aislado.",
+      "Cash from operations y free cash flow muestran conversión fuerte del crecimiento a caja."
+    ],
+    "bad": [
+      "El ritmo actual de crecimiento puede ser difícil de sostener y generar comparativas más duras en próximos trimestres.",
+      "Hay mucha narrativa de excepcionalidad; si el siguiente trimestre no confirma, el mercado puede castigar fuerte.",
+      "Una parte del optimismo ya puede estar descontada en valoración, así que un reporte bueno no implica acción barata."
+    ]
+  },
+  "kpis": [
+    {
+      "key": "revenue",
+      "label": "Revenue",
+      "actual": 1935.464,
+      "actual_unit": "MUSD",
+      "estimate": 1785.000,
+      "surprise_pct": 8.43,
+      "yoy_pct": 93,
+      "signal": "good",
+      "why_it_matters": "Mide si la empresa acelera el negocio principal y si bate las expectativas del mercado."
+    },
+    {
+      "key": "eps",
+      "label": "EPS diluido",
+      "actual": 0.41,
+      "actual_unit": "USD",
+      "estimate": 0.34,
+      "surprise_pct": 20.59,
+      "yoy_pct": 215,
+      "signal": "good",
+      "why_it_matters": "Resume la rentabilidad atribuible al accionista y suele mover la reacción inmediata."
+    },
+    {
+      "key": "operating_margin",
+      "label": "Margen operativo GAAP",
+      "actual": 47,
+      "actual_unit": "%",
+      "estimate": 34,
+      "surprise_pct": 13,
+      "yoy_pct": 13,
+      "signal": "good",
+      "why_it_matters": "Nos dice si el crecimiento está entrando con calidad o si se compra a costa de gastar demasiado."
+    },
+    {
+      "key": "free_cash_flow",
+      "label": "Adjusted FCF",
+      "actual": 1220.359,
+      "actual_unit": "MUSD",
+      "estimate": 900.000,
+      "surprise_pct": 35.60,
+      "yoy_pct": 114,
+      "signal": "good",
+      "why_it_matters": "La caja reduce el riesgo de que el crecimiento dependa de financiación externa."
+    },
+    {
+      "key": "guidance_revenue",
+      "label": "Guidance FY revenue",
+      "actual": 8150,
+      "actual_unit": "MUSD",
+      "estimate": 7750,
+      "surprise_pct": 5.16,
+      "yoy_pct": 82,
+      "signal": "good",
+      "why_it_matters": "Si la empresa sube guidance, el mercado entiende que la directiva ve continuidad en la demanda."
+    },
+    {
+      "key": "valuation_risk",
+      "label": "Riesgo valoración",
+      "actual": 1,
+      "actual_unit": "flag",
+      "estimate": null,
+      "surprise_pct": null,
+      "yoy_pct": null,
+      "signal": "bad",
+      "why_it_matters": "Un gran reporte puede seguir siendo mala compra si la valoración ya exige perfección."
+    }
+  ],
+  "cross_checks": [
+    {
+      "key": "beat_vs_expectations",
+      "label": "Beat vs consenso",
+      "status": "good",
+      "detail": "Revenue, EPS y guidance baten o suben frente a lo que el mercado esperaba."
+    },
+    {
+      "key": "growth_quality",
+      "label": "Calidad del crecimiento",
+      "status": "good",
+      "detail": "El crecimiento viene acompañado por expansión de margen y caja, no solo por ventas."
+    },
+    {
+      "key": "guidance_direction",
+      "label": "Dirección del guidance",
+      "status": "good",
+      "detail": "La directiva eleva expectativas para FY 2026 y para U.S. commercial."
+    },
+    {
+      "key": "cash_conversion",
+      "label": "Conversión a caja",
+      "status": "good",
+      "detail": "Cash from operations y free cash flow mantienen márgenes del 63%."
+    },
+    {
+      "key": "balance_sheet",
+      "label": "Balance y liquidez",
+      "status": "good",
+      "detail": "La caja y U.S. Treasuries dan colchón amplio y reducen riesgo financiero."
+    },
+    {
+      "key": "valuation_and_expectations",
+      "label": "Valoración y expectativas",
+      "status": "warning",
+      "detail": "Aunque el reporte es fuerte, la acción puede seguir vulnerable si el mercado ya pagaba un escenario perfecto."
+    }
+  ],
+  "risks": [
+    {
+      "label": "Sostenibilidad del crecimiento",
+      "severity": "medium",
+      "detail": "Un +93% YoY no suele ser una base repetible muchos trimestres seguidos."
+    },
+    {
+      "label": "Dependencia del momentum comercial en EE. UU.",
+      "severity": "medium",
+      "detail": "La historia alcista se apoya mucho en la tracción comercial estadounidense y en el relato de IA soberana."
+    },
+    {
+      "label": "Valoración exigente",
+      "severity": "high",
+      "detail": "Si el múltiplo ya es extremo, incluso un quarter excelente puede no compensar el riesgo de compresión."
+    }
+  ],
+  "backend_contract": {
+    "expected_endpoint": "GET /api/acciones/:uuid/earnings-analysis",
+    "minimum_fields": [
+      "report",
+      "verdict",
+      "highlights.good",
+      "highlights.bad",
+      "kpis",
+      "cross_checks",
+      "risks"
+    ]
+  }
+}

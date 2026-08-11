@@ -36,6 +36,43 @@ final class DoctrineAccionEarningsRepository implements AccionEarningsRepository
         return $this->em->getRepository(AccionEarnings::class)->findOneBy(['accion' => $accion]);
     }
 
+    public function findDueForReportFetch(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        $rows = $this->em->getConnection()->fetchAllAssociative(
+            'SELECT e.id
+             FROM acciones_earnings e
+             INNER JOIN acciones a ON a.id = e.accion_id
+             WHERE e.earnings_date BETWEEN :from AND :to
+               AND a.is_active = :active
+             ORDER BY e.earnings_date ASC, a.symbol ASC',
+            [
+                'from' => $from->format('Y-m-d'),
+                'to' => $to->format('Y-m-d'),
+                'active' => True,
+            ]
+        );
+
+        if ($rows === []) {
+            return [];
+        }
+
+        $ids = array_map(static fn (array $row): int => (int) $row['id'], $rows);
+        $entities = $this->em->getRepository(AccionEarnings::class)->findBy(['id' => $ids]);
+        $map = [];
+        foreach ($entities as $entity) {
+            $map[$entity->getId()] = $entity;
+        }
+
+        $ordered = [];
+        foreach ($ids as $id) {
+            if (isset($map[$id])) {
+                $ordered[] = $map[$id];
+            }
+        }
+
+        return $ordered;
+    }
+
     public function save(AccionEarnings $earnings): void
     {
         $this->em->persist($earnings);

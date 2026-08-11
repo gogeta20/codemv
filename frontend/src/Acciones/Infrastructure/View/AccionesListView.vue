@@ -10,6 +10,14 @@
         <InputIcon class="pi pi-search" />
         <InputText v-model="search" placeholder="Buscar símbolo, nombre o sector..." class="w-full" />
       </IconField>
+      <Button
+        :label="onlyWithReports ? 'Solo con reporte' : 'Todos'"
+        :icon="onlyWithReports ? 'pi pi-filter-fill' : 'pi pi-filter'"
+        size="small"
+        severity="secondary"
+        outlined
+        @click="onlyWithReports = !onlyWithReports"
+      />
       <Button label="Nueva acción" icon="pi pi-plus" size="small" @click="openCreate" />
     </div>
 
@@ -87,6 +95,21 @@
           <span v-if="data.earnings_date" :class="isTomorrow(data.earnings_date) ? 'earnings-tomorrow' : 'earnings-normal'">
             {{ formatEarningsDate(data.earnings_date) }}
           </span>
+          <span v-else class="text-muted">—</span>
+        </template>
+      </Column>
+
+      <Column field="has_earnings_report" header="Reporte" style="width: 120px; text-align: center">
+        <template #body="{ data }">
+          <Button
+            v-if="data.has_earnings_report"
+            label="Ver"
+            icon="pi pi-megaphone"
+            size="small"
+            severity="secondary"
+            outlined
+            @click="$router.push(`/acciones/${data.uuid}/earnings`)"
+          />
           <span v-else class="text-muted">—</span>
         </template>
       </Column>
@@ -218,6 +241,7 @@ const toast   = useToast()
 const acciones      = ref([])
 const loading       = ref(true)
 const search        = ref('')
+const onlyWithReports = ref(false)
 const saving        = ref(false)
 const dialogVisible = ref(false)
 const editTarget    = ref(null)
@@ -250,8 +274,15 @@ function formatEarningsDate(dateStr) {
 
 const filtered = computed(() => {
   const q = search.value.toLowerCase().trim()
-  if (!q) return acciones.value
-  return acciones.value.filter(a =>
+  let rows = acciones.value
+
+  if (onlyWithReports.value) {
+    rows = rows.filter(a => a.has_earnings_report)
+  }
+
+  if (!q) return rows
+
+  return rows.filter(a =>
     a.symbol.toLowerCase().includes(q) ||
     a.name.toLowerCase().includes(q) ||
     a.sector?.toLowerCase().includes(q)
@@ -462,3 +493,4 @@ async function deleteAccion(accion) {
 .earnings-tomorrow { font-size: 0.82rem; font-weight: 700; color: #f87171; }
 .earnings-normal   { font-size: 0.82rem; color: var(--tokyo-fg-dim); }
 </style>
+

@@ -67,6 +67,9 @@ services:
     App\Acciones\Domain\Repository\AccionEarningsRepositoryInterface:
         class: App\Acciones\Infrastructure\Doctrine\Repository\DoctrineAccionEarningsRepository
 
+    App\Acciones\Domain\Repository\AccionEarningsReportRepositoryInterface:
+        class: App\Acciones\Infrastructure\Doctrine\Repository\DoctrineAccionEarningsReportRepository
+
     App\Acciones\Domain\Repository\AccionAnalisisRepositoryInterface:
         class: App\Acciones\Infrastructure\Doctrine\Repository\DoctrineAccionAnalisisRepository
 

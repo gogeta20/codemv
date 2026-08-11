@@ -10,5 +10,7 @@ interface AccionEarningsRepositoryInterface
     /** @param int[] $accionIds */
     public function findByAccionIds(array $accionIds): array;
     public function findByAccion(Accion $accion): ?AccionEarnings;
+    /** @return AccionEarnings[] */
+    public function findDueForReportFetch(\DateTimeImmutable $from, \DateTimeImmutable $to): array;
     public function save(AccionEarnings $earnings): void;
 }

@@ -22,6 +22,14 @@
           outlined
           @click="$router.push(`/acciones/${route.params.uuid}/analisis`)"
         />
+        <Button
+          label="Earnings"
+          icon="pi pi-megaphone"
+          size="small"
+          severity="secondary"
+          outlined
+          @click="$router.push(`/acciones/${route.params.uuid}/earnings`)"
+        />
         <!-- Pertenece a un portafolio -->
         <div v-if="portafolio" class="portafolio-chip">
           <i class="pi pi-briefcase" />

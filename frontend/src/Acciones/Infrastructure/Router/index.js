@@ -15,6 +15,11 @@ export default [
     meta: { view: 'AccionAnalisisView.vue', endpoint: 'GET /api/acciones/:uuid/analisis' },
   },
   {
+    path: '/acciones/:uuid/earnings',
+    component: () => import('@/Acciones/Infrastructure/View/AccionEarningsAnalysisView.vue'),
+    meta: { view: 'AccionEarningsAnalysisView.vue', endpoint: 'GET /api/acciones/:uuid/earnings-analysis' },
+  },
+  {
     path: '/portafolio',
     component: () => import('@/Acciones/Infrastructure/View/PortafolioListView.vue'),
     meta: { view: 'PortafolioListView.vue', endpoint: 'GET /api/portafolio' },

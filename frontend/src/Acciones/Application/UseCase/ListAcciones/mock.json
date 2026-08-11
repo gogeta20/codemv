@@ -8,28 +8,25 @@
     "is_active": true,
     "alert_threshold_pct": 5,
     "created_at": "2026-04-25 02:31:18",
-    "updated_at": "2026-04-25 02:31:18"
+    "updated_at": "2026-04-25 02:31:18",
+    "has_earnings_report": false,
+    "earnings_report_uuid": null,
+    "earnings_report_filing_date": null,
+    "earnings_report_form_type": null
   },
   {
-    "uuid": "83633243-bdc1-4adf-9963-5f5af7236fc0",
-    "symbol": "OKLO",
-    "name": "Oklo Inc.",
+    "uuid": "5cfd7c18-ae43-451e-b3fa-0ba4036db071",
+    "symbol": "PLTR",
+    "name": "Palantir Technologies Inc.",
     "type": "stock",
     "source": "manual",
     "is_active": true,
     "alert_threshold_pct": 5,
-    "created_at": "2026-04-25 02:31:18",
-    "updated_at": "2026-04-25 02:31:18"
-  },
-  {
-    "uuid": "a4a386fc-3829-4397-a022-7e1129c160c7",
-    "symbol": "SMR",
-    "name": "NuScale Power",
-    "type": "stock",
-    "source": "discovered",
-    "is_active": true,
-    "alert_threshold_pct": 5,
-    "created_at": "2026-04-25 02:31:18",
-    "updated_at": "2026-04-25 02:31:18"
+    "created_at": "2026-08-10 08:47:56",
+    "updated_at": "2026-08-10 08:47:56",
+    "has_earnings_report": true,
+    "earnings_report_uuid": "2b4c4cbd-6a83-495e-ac83-4448efb67d41",
+    "earnings_report_filing_date": "2026-08-03",
+    "earnings_report_form_type": "8-K"
   }
 ]

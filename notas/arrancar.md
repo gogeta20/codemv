@@ -34,6 +34,9 @@ cd ~/projects/personal/IA/codemv && make agent-football
 # Análisis fútbol para mañana (útil para probar el cron de la 01:00)
 cd ~/projects/personal/IA/codemv && make agent-football-manana
 
+# Fetch de reportes de earnings desde SEC para una acción concreta
+docker exec codemv-api php bin/console app:acciones:fetch-earnings-reports --symbol=PLTR
+
 # Ranking de ligas mundiales por goles/partido ← ejecutar 1 vez por semana o al mes
 # Solo hace falta cuando quieres actualizar los datos de la vista /futbol/ligas/gpm
 cd ~/projects/personal/IA/codemv/backend/agent && python3 steps/ligas_gpm.py
@@ -54,7 +57,12 @@ cd ~/projects/personal/IA/codemv/backend/agent && python3 seed_ligas.py
 ```
 07:00  15:00  18:00  22:00  →  Lunes a Viernes  →  agente trading (main.py)
 01:00  todos los días        →  análisis fútbol  (football_daily.py)
+20:15  Lunes a Viernes       →  fetch reportes earnings Symfony (app:acciones:fetch-earnings-reports)
 @reboot (+ 30s)              →  lookup server
+
+Línea recomendada para el nuevo cron de earnings:
+
+0 20 * * 1-5  cd /home/mauricio-vargas/projects/personal/codemv && docker exec codemv-api php bin/console app:acciones:fetch-earnings-reports --days-back=7 --days-forward=1 >> /tmp/earnings_reports.log 2>&1
 ```
 
 ---
