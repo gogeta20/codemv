@@ -46,3 +46,5 @@ framework:
             App\Futbol\Application\Favorito\GetPartidos\GetFavoritosPartidosQuery:      sync
             App\Futbol\Application\Favorito\GetTeamsByLiga\GetTeamsByLigaQuery:         sync
             App\Futbol\Application\Jugador\GetAnalisis\GetJugadorAnalisisQuery:         sync
+            App\Futbol\Application\Liga\ListLigas\ListLigasQuery:                       sync
+            App\Futbol\Application\Liga\ToggleLigaActiva\ToggleLigaActivaCommand:       sync

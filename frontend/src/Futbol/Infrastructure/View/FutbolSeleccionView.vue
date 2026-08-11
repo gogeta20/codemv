@@ -130,6 +130,36 @@
             <span v-if="favoritos.length" class="fav-count-badge">{{ favoritos.length }}</span>
           </template>
 
+          <!-- Panel de gestión de ligas -->
+          <div class="fav-manager panel">
+            <div class="fav-manager__header" @click="ligasVisible = !ligasVisible">
+              <span class="fav-manager__title">
+                <i class="pi pi-sliders-h" /> Gestionar ligas a seguir
+              </span>
+              <i :class="ligasVisible ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" style="font-size:0.8rem; color:var(--tokyo-fg-dim)" />
+            </div>
+
+            <div v-if="ligasVisible" class="fav-manager__body">
+              <p class="fav-empty-hint" style="margin:0 0 var(--space-2)">
+                Las ligas activas alimentan la Tabla A, Tabla B y Under de la selección diaria. Los equipos favoritos (abajo) siguen funcionando sin importar esta lista.
+              </p>
+              <div v-if="loadingLigas" class="loading-state" style="padding:var(--space-4)">
+                <i class="pi pi-spin pi-spinner" /> Cargando ligas...
+              </div>
+              <div v-else class="ligas-list">
+                <div v-for="liga in ligas" :key="liga.codigo_espn" class="liga-item">
+                  <span class="liga-item__name">{{ liga.nombre }}</span>
+                  <span class="liga-item__pais">{{ liga.pais }}</span>
+                  <ToggleSwitch
+                    :modelValue="liga.activa"
+                    :disabled="togglingLiga === liga.codigo_espn"
+                    @update:modelValue="(val) => toggleLiga(liga, val)"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Panel de gestión -->
           <div class="fav-manager panel">
             <div class="fav-manager__header" @click="gestionVisible = !gestionVisible">
@@ -234,6 +264,7 @@ import TabView from 'primevue/tabview'
 import TabPanel from 'primevue/tabpanel'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
+import ToggleSwitch from 'primevue/toggleswitch'
 import { useToast } from 'primevue/usetoast'
 import PartidoCard from './components/PartidoCard.vue'
 import PartidoCardUnder from './components/PartidoCardUnder.vue'
@@ -244,6 +275,8 @@ import { AddFavoritoUseCase } from '@/Futbol/Application/UseCase/AddFavorito/Add
 import { RemoveFavoritoUseCase } from '@/Futbol/Application/UseCase/RemoveFavorito/RemoveFavoritoUseCase'
 import { GetFavoritosPartidosUseCase } from '@/Futbol/Application/UseCase/GetFavoritosPartidos/GetFavoritosPartidosUseCase'
 import { GetTeamsByLigaUseCase } from '@/Futbol/Application/UseCase/GetTeamsByLiga/GetTeamsByLigaUseCase'
+import { ListLigasUseCase } from '@/Futbol/Application/UseCase/ListLigas/ListLigasUseCase'
+import { ToggleLigaActivaUseCase } from '@/Futbol/Application/UseCase/ToggleLigaActiva/ToggleLigaActivaUseCase'
 import { LIGAS } from '@/Futbol/Infrastructure/constants/ligas'
 
 const toast = useToast()
@@ -255,6 +288,10 @@ const favoritos       = ref([])
 const favoritosPartidos = ref([])
 const loadingPartidos = ref(false)
 const gestionVisible  = ref(false)
+const ligas           = ref([])
+const ligasVisible    = ref(false)
+const loadingLigas    = ref(false)
+const togglingLiga    = ref(null)
 const ligaSeleccionada  = ref(null)
 const equipoSeleccionado = ref(null)
 const equiposLiga     = ref([])
@@ -278,7 +315,37 @@ onMounted(async () => {
   if (favs.length) {
     loadPartidos()
   }
+
+  loadLigas()
 })
+
+async function loadLigas() {
+  loadingLigas.value = true
+  try {
+    ligas.value = await ListLigasUseCase()
+  } finally {
+    loadingLigas.value = false
+  }
+}
+
+async function toggleLiga(liga, activa) {
+  togglingLiga.value = liga.codigo_espn
+  const previa = liga.activa
+  liga.activa = activa
+  try {
+    await ToggleLigaActivaUseCase(liga.codigo_espn, {
+      activa,
+      nombre: liga.nombre,
+      pais: liga.pais,
+    })
+    toast.add({ severity: 'success', summary: `${liga.nombre} ${activa ? 'activada' : 'desactivada'}`, life: 2000 })
+  } catch {
+    liga.activa = previa
+    toast.add({ severity: 'error', summary: 'No se pudo actualizar la liga', life: 3000 })
+  } finally {
+    togglingLiga.value = null
+  }
+}
 
 watch(tabActivo, (idx) => {
   // Tab favoritos es el índice 3
@@ -543,6 +610,15 @@ function formatHora(isoStr) {
 .fav-search-row { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
 .fav-liga-select  { flex: 1; min-width: 200px; }
 .fav-equipo-select { flex: 1; min-width: 180px; }
+
+.ligas-list { display: flex; flex-direction: column; gap: var(--space-1); max-height: 320px; overflow-y: auto; }
+.liga-item {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--tokyo-bg-tertiary); border-radius: 6px;
+}
+.liga-item__name { font-weight: 600; font-size: 0.88rem; flex: 1; }
+.liga-item__pais  { font-size: 0.75rem; color: var(--tokyo-fg-dim); }
 
 .fav-list { display: flex; flex-direction: column; gap: var(--space-2); }
 .fav-item {

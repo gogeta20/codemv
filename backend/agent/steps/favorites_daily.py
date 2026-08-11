@@ -4,7 +4,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from datetime import date, datetime, timezone
 from db import get_all_favoritos, get_or_create_liga, save_partido_futbol, save_seleccion_diaria
-from tools.espn import get_scoreboard, get_standings, get_match_summary, get_team_corners_avg
+from tools.espn import get_scoreboard, get_standings
+from tools.enrich import enrich_partido
 from tools.match_scorer import score_match
 from tools.telegram import send as telegram_send
 
@@ -82,43 +83,10 @@ def run(fecha: date | None = None):
                 "gpm_equipos_liga": total_equipos,
             })
 
-            # Odds + H2H
+            # Odds + H2H + corners
             print(f"    → odds/H2H...", end=" ", flush=True)
-            summary = get_match_summary(liga_code, p["espn_event_id"])
-            if summary:
-                odds  = summary.get("odds", {})
-                probs = summary.get("probabilidades", {})
-                h2h   = summary.get("h2h", {})
-                p.update({
-                    "odds_local":              odds.get("local"),
-                    "odds_empate":             odds.get("empate"),
-                    "odds_visitante":          odds.get("visitante"),
-                    "spread":                  odds.get("spread"),
-                    "over_under":              odds.get("over_under"),
-                    "prob_local":              probs.get("local"),
-                    "prob_empate":             probs.get("empate"),
-                    "prob_visitante":          probs.get("visitante"),
-                    "h2h_ganados_local":       h2h.get("ganados_local"),
-                    "h2h_ganados_visitante":   h2h.get("ganados_visitante"),
-                    "h2h_empates":             h2h.get("empates"),
-                    "h2h_detalle":             h2h.get("detalle"),
-                    "lideres":                 summary.get("lideres"),
-                })
-                print("OK")
-            else:
-                p.update({k: None for k in ["odds_local","odds_empate","odds_visitante","spread",
-                    "over_under","prob_local","prob_empate","prob_visitante",
-                    "h2h_ganados_local","h2h_ganados_visitante","h2h_empates","h2h_detalle","lideres"]})
-                print("sin datos")
-
-            # Corners
-            tid_l = p.get("espn_team_id_local")
-            tid_v = p.get("espn_team_id_visit")
-            if tid_l and tid_v:
-                p["corners_local"]     = get_team_corners_avg(liga_code, tid_l, n_partidos=10)
-                p["corners_visitante"] = get_team_corners_avg(liga_code, tid_v, n_partidos=10)
-            else:
-                p["corners_local"] = p["corners_visitante"] = None
+            enrich_partido(p, liga_code)
+            print("OK" if p.get("odds_local") is not None or p.get("prob_local") is not None else "sin datos")
 
             # Score
             score, detalle = score_match(p, total_equipos, ignorar_temporada=False)

@@ -8,7 +8,7 @@
       <!-- Header -->
       <div class="page__header">
         <div>
-          <span class="liga-label">{{ partido.liga.nombre }} · {{ partido.liga.pais }}</span>
+          <span class="liga-label">{{ ligaLabel }}</span>
           <h1 class="page__title match-title">
             {{ partido.equipo_local }}
             <span class="vs-sep">vs</span>
@@ -20,16 +20,18 @@
           </span>
         </div>
         <div class="page__actions">
+          <span class="score-chip" :class="scoreClass" title="Puntuación de analizabilidad del algoritmo, no es el resultado del partido">
+            Score IA {{ partido.score_analisis }}
+          </span>
           <RouterLink to="/futbol/partidos">
             <Button label="Volver" icon="pi pi-arrow-left" severity="secondary" size="small" />
           </RouterLink>
         </div>
       </div>
 
-      <!-- Score analisis badge + resultado si terminó -->
-      <div class="match-meta">
-        <span class="score-chip" :class="scoreClass">{{ partido.score_analisis }} pts</span>
-        <div v-if="partido.resultado.goles_local !== null" class="resultado-final">
+      <!-- Resultado si ya empezó/terminó -->
+      <div v-if="partido.resultado.goles_local !== null" class="match-meta">
+        <div class="resultado-final">
           <span class="gol-num">{{ partido.resultado.goles_local }}</span>
           <span class="gol-sep">–</span>
           <span class="gol-num">{{ partido.resultado.goles_visitante }}</span>
@@ -261,6 +263,14 @@ const horaLocal = computed(() => {
 
 const estadio = computed(() => partido.value?.estadio || '—')
 
+// El nombre de la liga ya incluye el país ("País — Liga"); solo lo agregamos aparte si no está repetido (ej. Mundial: "FIFA World Cup 2026" · "International").
+const ligaLabel = computed(() => {
+  const liga = partido.value?.liga
+  if (!liga) return ''
+  if (!liga.pais || liga.nombre.includes(liga.pais)) return liga.nombre
+  return `${liga.nombre} · ${liga.pais}`
+})
+
 const estadoLabel = computed(() => ({
   programado: 'Programado', en_juego: 'En juego', finalizado: 'Finalizado',
 }[partido.value?.estado] ?? partido.value?.estado))
@@ -278,20 +288,19 @@ const scoreClass = computed(() => {
 
 function fmtOdds(v) {
   if (v === null || v === undefined) return '—'
-  return v > 0 ? `+${v}` : `${v}`
+  return Number(v).toFixed(2)
 }
 
-function impliedPct(ml) {
-  if (ml === null || ml === undefined) return '—'
-  const p = ml < 0
-    ? Math.abs(ml) / (Math.abs(ml) + 100)
-    : 100 / (ml + 100)
-  return Math.round(p * 100)
+// odds_local/empate/visitante son cuotas decimales (ej: 1.32 = pagan 1.32 por cada 1 apostado).
+// Probabilidad implícita = 1 / cuota. La suma de las 3 supera el 100% por el margen de la casa (vig), es normal.
+function impliedPct(cuotaDecimal) {
+  if (cuotaDecimal === null || cuotaDecimal === undefined || cuotaDecimal <= 0) return '—'
+  return Math.round((1 / cuotaDecimal) * 100)
 }
 
 function oddsColor(v) {
-  if (v === null) return ''
-  return v < 0 ? 'fav-odds' : 'dog-odds'
+  if (v === null || v === undefined) return ''
+  return v < 2 ? 'fav-odds' : 'dog-odds'
 }
 
 const CAT_LABELS = {
@@ -356,8 +365,8 @@ function h2hTeamName(g, side) {
 .match-title { font-size: 1.5rem; margin: var(--space-1) 0; }
 .vs-sep      { color: var(--tokyo-fg-dim); font-weight: 400; margin: 0 var(--space-2); }
 
-.match-meta { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4); }
-.score-chip { font-size: 0.82rem; font-weight: 800; padding: 3px 10px; border-radius: 12px; }
+.match-meta { display: flex; align-items: center; margin-bottom: var(--space-4); }
+.score-chip { font-size: 0.82rem; font-weight: 800; padding: 3px 10px; border-radius: 12px; cursor: help; }
 .score-chip.high { background: rgba(158,206,106,0.15); color: #9ece6a; }
 .score-chip.mid  { background: rgba(224,175,104,0.15); color: #e0af68; }
 .score-chip.low  { background: rgba(148,148,148,0.1);  color: var(--tokyo-fg-dim); }

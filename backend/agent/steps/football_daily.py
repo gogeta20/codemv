@@ -1,14 +1,16 @@
 import sys
 import os
+import copy
 import argparse
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import requests
 from datetime import date, datetime, timedelta, timezone
-from tools.espn import get_scoreboard, get_standings, get_match_summary, get_team_corners_avg
-from tools.match_scorer import rank_partidos, rank_partidos_under
+from tools.espn import get_scoreboard, get_standings
+from tools.enrich import enrich_partido
+from tools.match_scorer import rank_partidos, rank_partidos_under, score_match
 from tools.telegram import send_football as telegram_send
-from db import get_active_ligas, save_partido_futbol, save_seleccion_diaria, get_ligas_config
+from db import get_active_ligas, get_all_favoritos, get_or_create_liga, save_partido_futbol, save_seleccion_diaria, get_ligas_config
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
 MODEL      = "llama3.2:3b"
@@ -119,67 +121,24 @@ def run(fecha: date | None = None):
 
     print(f"\n[football_daily] Total partidos hoy: {len(todos_los_partidos)}")
 
-    # 3. Enriquecer con odds + H2H (summary) — solo para los que tienen tabla
+    # 3. Enriquecer con odds + H2H (summary)
     print("[football_daily] Enriqueciendo con odds y H2H...")
     for p in todos_los_partidos:
-        event_id = p["espn_event_id"]
-        codigo   = p["liga_codigo"]
         print(f"  → {p['equipo_local']} vs {p['equipo_visitante']}...", end=" ", flush=True)
-        summary = get_match_summary(codigo, event_id)
-
-        if summary:
-            odds  = summary.get("odds", {})
-            probs = summary.get("probabilidades", {})
-            h2h   = summary.get("h2h", {})
-
-            p["odds_local"]         = odds.get("local")
-            p["odds_empate"]        = odds.get("empate")
-            p["odds_visitante"]     = odds.get("visitante")
-            p["spread"]             = odds.get("spread")
-            p["over_under"]         = odds.get("over_under")
-            p["prob_local"]         = probs.get("local")
-            p["prob_empate"]        = probs.get("empate")
-            p["prob_visitante"]     = probs.get("visitante")
-            p["h2h_ganados_local"]  = h2h.get("ganados_local")
-            p["h2h_ganados_visitante"] = h2h.get("ganados_visitante")
-            p["h2h_empates"]        = h2h.get("empates")
-            p["h2h_detalle"]        = h2h.get("detalle")
-            p["lideres"]            = summary.get("lideres")
-            print("OK")
-        else:
-            p["odds_local"] = p["odds_empate"] = p["odds_visitante"] = None
-            p["spread"] = p["over_under"] = None
-            p["prob_local"] = p["prob_empate"] = p["prob_visitante"] = None
-            p["h2h_ganados_local"] = p["h2h_ganados_visitante"] = p["h2h_empates"] = None
-            p["h2h_detalle"] = None
-            p["lideres"] = None
-            print("sin datos")
-
-        # Corners promedio (últimos 10 partidos finalizados)
-        tid_l = p.get("espn_team_id_local")
-        tid_v = p.get("espn_team_id_visit")
-        if tid_l and tid_v:
-            print(f"  → corners {p['equipo_local']}...", end=" ", flush=True)
-            p["corners_local"]     = get_team_corners_avg(codigo, tid_l, n_partidos=10)
-            print("OK" if p["corners_local"] else "sin datos")
-            print(f"  → corners {p['equipo_visitante']}...", end=" ", flush=True)
-            p["corners_visitante"] = get_team_corners_avg(codigo, tid_v, n_partidos=10)
-            print("OK" if p["corners_visitante"] else "sin datos")
-        else:
-            p["corners_local"] = p["corners_visitante"] = None
+        enrich_partido(p, p["liga_codigo"])
+        print("OK" if p.get("odds_local") is not None or p.get("prob_local") is not None else "sin datos")
 
     # 4. Puntuar todos en sitio (con_temporada como score principal en DB)
     print("\n[football_daily] Puntuando partidos...")
-    from tools.match_scorer import score_match
     for p in todos_los_partidos:
         score, detalle = score_match(p, p.get("total_equipos", 20), ignorar_temporada=False)
         p["score_analisis"] = score
         p["score_detalle"]  = detalle
 
-    # Elegir top 4 en tres variantes (deepcopy interno en rank_partidos)
-    seleccionados_a     = rank_partidos(todos_los_partidos, top_n=4, ignorar_temporada=False)
-    seleccionados_b     = rank_partidos(todos_los_partidos, top_n=4, ignorar_temporada=True)
-    seleccionados_under = rank_partidos_under(todos_los_partidos, top_n=4)
+    # Elegir top 8 en tres variantes (deepcopy interno en rank_partidos)
+    seleccionados_a     = rank_partidos(todos_los_partidos, top_n=8, ignorar_temporada=False)
+    seleccionados_b     = rank_partidos(todos_los_partidos, top_n=8, ignorar_temporada=True)
+    seleccionados_under = rank_partidos_under(todos_los_partidos, top_n=8)
 
     # Inyectar ranking under de cada equipo en el detalle (se guarda en DB como razones)
     for p in seleccionados_under:
@@ -189,16 +148,37 @@ def run(fecha: date | None = None):
             "total_equipos": p.get("gpm_equipos_liga"),
         }
 
+    # 4b. Priorizar favoritos: si un equipo favorito juega hoy pero no entró al Top 8 por score,
+    # se agrega igual al final de Tabla A y B — independiente de si el partido es fácil o difícil de analizar.
+    print("\n[football_daily] Agregando partidos de equipos favoritos...")
+    favoritos_extra = _favoritos_pendientes(hoy, todos_los_partidos)
+    ids_a = {p["espn_event_id"] for p in seleccionados_a}
+    ids_b = {p["espn_event_id"] for p in seleccionados_b}
+    if not favoritos_extra:
+        print("  (ningún favorito fuera del Top 8 hoy)")
+    for fav_p in favoritos_extra:
+        todos_los_partidos.append(fav_p)
+        if fav_p["espn_event_id"] not in ids_a:
+            extra_a = copy.deepcopy(fav_p)
+            extra_a["score_analisis"], extra_a["score_detalle"] = score_match(extra_a, extra_a.get("total_equipos", 20), ignorar_temporada=False)
+            seleccionados_a.append(extra_a)
+            print(f"  ⭐ Tabla A: {fav_p['equipo_local']} vs {fav_p['equipo_visitante']}")
+        if fav_p["espn_event_id"] not in ids_b:
+            extra_b = copy.deepcopy(fav_p)
+            extra_b["score_analisis"], extra_b["score_detalle"] = score_match(extra_b, extra_b.get("total_equipos", 20), ignorar_temporada=True)
+            seleccionados_b.append(extra_b)
+            print(f"  ⭐ Tabla B: {fav_p['equipo_local']} vs {fav_p['equipo_visitante']}")
+
     print(f"\n{'='*50}")
-    print("TOP 4 — con penalización temporada:")
+    print("TABLA A — con penalización temporada (Top 8 + favoritos):")
     for i, p in enumerate(seleccionados_a, 1):
         print(f"  {i}. [{p['liga_nombre']}] {p['equipo_local']} vs {p['equipo_visitante']} — score: {p['score_analisis']}")
 
-    print("\nTOP 4 — sin penalización temporada:")
+    print("\nTABLA B — sin penalización temporada (Top 8 + favoritos):")
     for i, p in enumerate(seleccionados_b, 1):
         print(f"  {i}. [{p['liga_nombre']}] {p['equipo_local']} vs {p['equipo_visitante']} — score: {p['score_analisis']}")
 
-    print("\nTOP 4 — UNDER (menos goles esperados):")
+    print("\nTOP 8 — UNDER (menos goles esperados):")
     for i, p in enumerate(seleccionados_under, 1):
         print(f"  {i}. [{p['liga_nombre']}] {p['equipo_local']} vs {p['equipo_visitante']} — under_score: {p['score_under']}")
     print(f"{'='*50}\n")
@@ -223,6 +203,67 @@ def run(fecha: date | None = None):
     _enviar_telegram(hoy, seleccionados_a, seleccionados_b, seleccionados_under, analisis_texto)
 
     print("\n[football_daily] Completado.\n")
+
+
+def _favoritos_pendientes(fecha: date, todos_los_partidos: list[dict]) -> list[dict]:
+    """Partidos de hoy de equipos favoritos que no están en todos_los_partidos (liga no activa)."""
+    favoritos = get_all_favoritos()
+    if not favoritos:
+        return []
+
+    ligas_ya_cargadas = {p["liga_codigo"] for p in todos_los_partidos}
+    ids_ya_cargados    = {p["espn_event_id"] for p in todos_los_partidos}
+
+    pendientes_por_liga: dict[str, list[dict]] = {}
+    for fav in favoritos:
+        if fav["espn_liga_code"] not in ligas_ya_cargadas:
+            pendientes_por_liga.setdefault(fav["espn_liga_code"], []).append(fav)
+
+    resultado = []
+    for liga_code, favs_liga in pendientes_por_liga.items():
+        team_ids = {f["espn_team_id"] for f in favs_liga}
+        fav_ref  = favs_liga[0]
+
+        partidos_liga = get_scoreboard(liga_code, fecha)
+        tabla         = get_standings(liga_code)
+        total_equipos = len(tabla) if tabla else 20
+
+        for p in partidos_liga:
+            if p["estado"] == "finalizado" or p["espn_event_id"] in ids_ya_cargados:
+                continue
+            tid_l = p.get("espn_team_id_local", "")
+            tid_v = p.get("espn_team_id_visit", "")
+            if tid_l not in team_ids and tid_v not in team_ids:
+                continue
+
+            info_l = tabla.get(p["equipo_local"], {})
+            info_v = tabla.get(p["equipo_visitante"], {})
+            p.update({
+                "liga_uuid":          get_or_create_liga(liga_code, fav_ref["liga_nombre"], fav_ref["pais"]),
+                "liga_codigo":        liga_code,
+                "liga_nombre":        fav_ref["liga_nombre"],
+                "total_equipos":      total_equipos,
+                "pos_local":          info_l.get("pos"),
+                "pos_visitante":      info_v.get("pos"),
+                "pts_local":          info_l.get("pts"),
+                "pts_visitante":      info_v.get("pts"),
+                "pj_local":           info_l.get("pj"),
+                "pj_visitante":       info_v.get("pj"),
+                "gf_local":           info_l.get("gf"),
+                "gc_local":           info_l.get("gc"),
+                "gf_visitante":       info_v.get("gf"),
+                "gc_visitante":       info_v.get("gc"),
+                "forma_local":        info_l.get("forma"),
+                "forma_visitante":    info_v.get("forma"),
+                "gpm_rank_local":     None,
+                "gpm_rank_visitante": None,
+                "gpm_equipos_liga":   total_equipos,
+            })
+            enrich_partido(p, liga_code)
+            resultado.append(p)
+            ids_ya_cargados.add(p["espn_event_id"])
+
+    return resultado
 
 
 def _generar_analisis_ollama(partidos: list[dict]) -> str:
