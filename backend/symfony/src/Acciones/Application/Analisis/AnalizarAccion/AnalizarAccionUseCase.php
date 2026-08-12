@@ -6,6 +6,7 @@ use App\Acciones\Domain\Repository\AccionAnalisisRepositoryInterface;
 use App\Acciones\Domain\Repository\AccionRepositoryInterface;
 use App\Acciones\Infrastructure\Doctrine\Entity\AccionAnalisis;
 use App\Acciones\Infrastructure\Service\CsvParserService;
+use App\Acciones\Infrastructure\Service\FairValueService;
 use App\Acciones\Infrastructure\Service\MetricExtractorService;
 use App\Acciones\Infrastructure\Service\RetratoPainter;
 use App\Acciones\Infrastructure\Service\ScoringService;
@@ -20,6 +21,7 @@ final class AnalizarAccionUseCase
         private readonly MetricExtractorService            $extractor,
         private readonly ScoringService                    $scorer,
         private readonly RetratoPainter                    $painter,
+        private readonly FairValueService                  $fairValueService,
     ) {}
 
     public function execute(AnalizarAccionCommand $command): AccionAnalisis
@@ -56,6 +58,13 @@ final class AnalizarAccionUseCase
         if ($command->priceAtAnalysis !== null) {
             $analisis->setPriceAtAnalysis((string) $command->priceAtAnalysis);
         }
+
+        $fairValue = $this->fairValueService->compute($metrics, $scoreResult);
+        if ($fairValue['value'] !== null) {
+            $analisis->setFairValue((string) $fairValue['value']);
+        }
+        $analisis->setFairValueMethod($fairValue['method']);
+        $analisis->setFairValueDetail($fairValue);
 
         $this->analisisRepository->save($analisis);
 

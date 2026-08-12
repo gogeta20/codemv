@@ -28,4 +28,30 @@ final class DoctrineAccionAnalisisRepository implements AccionAnalisisRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    public function findLatestByAccionIds(array $accionIds): array
+    {
+        if (empty($accionIds)) {
+            return [];
+        }
+
+        $rows = $this->em->createQuery(
+            'SELECT a
+             FROM App\Acciones\Infrastructure\Doctrine\Entity\AccionAnalisis a
+             WHERE a.accion IN (:ids)
+             ORDER BY a.createdAt DESC, a.id DESC'
+        )
+        ->setParameter('ids', $accionIds)
+        ->getResult();
+
+        $map = [];
+        foreach ($rows as $analisis) {
+            $accionId = $analisis->getAccion()->getId();
+            if (!isset($map[$accionId])) {
+                $map[$accionId] = $analisis;
+            }
+        }
+
+        return $map;
+    }
 }

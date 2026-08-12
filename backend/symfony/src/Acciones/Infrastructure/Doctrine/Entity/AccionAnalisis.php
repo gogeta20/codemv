@@ -59,6 +59,16 @@ class AccionAnalisis
     #[ORM\Column(type: 'decimal', precision: 15, scale: 4, nullable: true)]
     private ?string $priceAtAnalysis = null;
 
+    #[ORM\Column(type: 'decimal', precision: 15, scale: 4, nullable: true)]
+    private ?string $fairValue = null;
+
+    // graham_number | dividend_discount | price_to_sales | net_cash_floor | not_available
+    #[ORM\Column(type: 'string', length: 30, nullable: true)]
+    private ?string $fairValueMethod = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $fairValueDetail = null;
+
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -109,6 +119,9 @@ class AccionAnalisis
     public function getSpeculativeType(): ?string { return $this->speculativeType; }
     public function getPortrait(): string { return $this->portrait; }
     public function getPriceAtAnalysis(): ?string { return $this->priceAtAnalysis; }
+    public function getFairValue(): ?string { return $this->fairValue; }
+    public function getFairValueMethod(): ?string { return $this->fairValueMethod; }
+    public function getFairValueDetail(): ?array { return $this->fairValueDetail; }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUpdatedAt(): \DateTime { return $this->updatedAt; }
 
@@ -116,6 +129,9 @@ class AccionAnalisis
     public function setStage(?string $v): void { $this->stage = $v; }
     public function setSpeculativeType(?string $v): void { $this->speculativeType = $v; }
     public function setPriceAtAnalysis(?string $v): void { $this->priceAtAnalysis = $v; }
+    public function setFairValue(?string $v): void { $this->fairValue = $v; }
+    public function setFairValueMethod(?string $v): void { $this->fairValueMethod = $v; }
+    public function setFairValueDetail(?array $v): void { $this->fairValueDetail = $v; }
 
     public function toArray(): array
     {
@@ -132,6 +148,9 @@ class AccionAnalisis
             'portrait'         => $this->portrait,
             'metrics'          => $this->metrics,
             'price_at_analysis'=> $this->priceAtAnalysis ? (float) $this->priceAtAnalysis : null,
+            'fair_value'        => $this->fairValue ? (float) $this->fairValue : null,
+            'fair_value_method' => $this->fairValueMethod,
+            'fair_value_detail' => $this->fairValueDetail,
             'created_at'       => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at'       => $this->updatedAt->format('Y-m-d H:i:s'),
         ];

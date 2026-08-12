@@ -103,7 +103,19 @@
                 <span v-if="analisis.investment_type" class="badge badge--type">{{ tipoLabel(analisis.investment_type) }}</span>
                 <span v-if="analisis.speculative_type" class="badge badge--spec">{{ especulativoLabel(analisis.speculative_type) }}</span>
                 <span v-if="analisis.stage" class="badge badge--stage">{{ stageLabel(analisis.stage) }}</span>
-                <span v-if="analisis.price_at_analysis" class="badge badge--price">${{ analisis.price_at_analysis.toFixed(2) }}</span>
+                <span v-if="analisis.price_at_analysis" class="badge badge--price">Mercado ${{ analisis.price_at_analysis.toFixed(2) }}</span>
+                <span
+                  v-if="analisis.fair_value"
+                  class="badge"
+                  :class="analisis.fair_value_method === 'net_cash_floor' ? 'badge--fair-value-floor' : 'badge--fair-value'"
+                  :title="analisis.fair_value_detail?.explanation"
+                >
+                  <i v-if="analisis.fair_value_method === 'net_cash_floor'" class="pi pi-shield" />
+                  {{ fairValueMethodLabel(analisis.fair_value_method) }}: ${{ analisis.fair_value.toFixed(2) }}
+                </span>
+                <span v-else-if="analisis.fair_value_method === 'not_available'" class="badge badge--fair-value-na" :title="analisis.fair_value_detail?.explanation">
+                  Sin valoración fundamental confiable
+                </span>
               </div>
               <div class="veredicto-fecha">Analizado el {{ fmtDate(analisis.created_at) }}</div>
             </div>
@@ -340,6 +352,14 @@ function scoreLabel(s) {
 function scoreIcon(s) {
   return { comprar: 'pi-check-circle', vigilar: 'pi-eye', especulativo: 'pi-bolt', evitar: 'pi-times-circle' }[s] ?? 'pi-circle'
 }
+function fairValueMethodLabel(method) {
+  return {
+    graham_number: 'Número de Graham',
+    dividend_discount: 'Descuento de dividendos',
+    price_to_sales: 'Múltiplo de ventas',
+    net_cash_floor: 'Piso de caja neta',
+  }[method] ?? method
+}
 function tipoLabel(t) {
   return {
     dividend_aristocrat: 'Aristócrata del dividendo',
@@ -519,6 +539,9 @@ function fmtDate(s) {
 .badge--spec  { color: var(--tokyo-cyan);    border-color: var(--tokyo-cyan); }
 .badge--stage { color: var(--tokyo-fg-dim); border-color: var(--tokyo-bg-tertiary); }
 .badge--price { color: #fbbf24;              border-color: #fbbf24; }
+.badge--fair-value    { color: #4ade80; border-color: #4ade80; cursor: help; }
+.badge--fair-value-na { color: var(--tokyo-fg-dim); border-color: var(--tokyo-bg-tertiary); cursor: help; }
+.badge--fair-value-floor { color: var(--tokyo-fg-dim); border-color: var(--tokyo-bg-tertiary); border-style: dotted; cursor: help; display: inline-flex; align-items: center; gap: 0.3rem; }
 
 /* ── Retrato ── */
 .portrait-box {

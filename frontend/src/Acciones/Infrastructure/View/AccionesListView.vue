@@ -60,6 +60,24 @@
         </template>
       </Column>
 
+      <Column field="fair_value" header="Precio Real" sortable style="width: 110px; text-align: right">
+        <template #body="{ data }">
+          <span
+            v-if="data.fair_value != null && data.fair_value_method === 'net_cash_floor'"
+            class="fair-value-val fair-value-val--floor"
+            :title="fairValueTooltip(data)"
+          ><i class="pi pi-shield" />${{ data.fair_value.toFixed(2) }}</span>
+          <span
+            v-else-if="data.fair_value != null"
+            class="fair-value-val"
+            :class="fairValueClass(data.precio, data.fair_value)"
+            :title="fairValueTooltip(data)"
+          >${{ data.fair_value.toFixed(2) }}</span>
+          <span v-else-if="data.fair_value_method === 'not_available'" class="text-muted" title="Sin valoración fundamental confiable (sin beneficio, dividendo ni caja neta positiva)">N/D</span>
+          <span v-else class="text-muted">—</span>
+        </template>
+      </Column>
+
       <Column field="change_pct" header="%" sortable style="width: 95px; text-align: right">
         <template #body="{ data }">
           <span v-if="data.change_pct != null" class="change-badge" :class="data.change_pct >= 0 ? 'up' : 'down'">
@@ -272,6 +290,29 @@ function formatEarningsDate(dateStr) {
   return `${d}/${m}/${y.slice(2)}`
 }
 
+const FAIR_VALUE_METHOD_LABELS = {
+  graham_number: 'Número de Graham',
+  dividend_discount: 'Descuento de dividendos',
+  price_to_sales: 'Múltiplo de ventas (P/S)',
+  net_cash_floor: 'Piso de caja neta',
+}
+
+function fairValueClass(precio, fairValue) {
+  if (precio == null) return ''
+  return fairValue >= precio ? 'undervalued' : 'overvalued'
+}
+
+function fairValueTooltip(data) {
+  const label = FAIR_VALUE_METHOD_LABELS[data.fair_value_method] ?? data.fair_value_method
+  if (data.fair_value_method === 'net_cash_floor') {
+    return `${label} — NO es un precio objetivo, es lo que quedaría por acción si la empresa liquidara hoy (caja neta / acciones). No hay beneficio, dividendo ni ingresos crecientes para valorarla de otra forma.`
+  }
+  if (data.precio == null) return label
+  const diffPct = ((data.fair_value - data.precio) / data.precio) * 100
+  const direction = diffPct >= 0 ? 'por debajo de' : 'por encima de'
+  return `${label} — precio de mercado ${Math.abs(diffPct).toFixed(1)}% ${direction} el valor estimado`
+}
+
 const filtered = computed(() => {
   const q = search.value.toLowerCase().trim()
   let rows = acciones.value
@@ -466,6 +507,11 @@ async function deleteAccion(accion) {
 .sector-text { font-size: 0.82rem; color: var(--tokyo-fg-dim); }
 
 .price-val { font-weight: 600; font-size: 0.9rem; }
+.fair-value-val { font-weight: 600; font-size: 0.9rem; cursor: help; border-bottom: 1px dashed currentColor; }
+.fair-value-val.undervalued { color: #4ade80; }
+.fair-value-val.overvalued  { color: #f87171; }
+.fair-value-val--floor { color: var(--tokyo-fg-dim); border-bottom-style: dotted; display: inline-flex; align-items: center; gap: 0.3rem; }
+.fair-value-val--floor .pi { font-size: 0.78rem; }
 
 .change-badge {
   display: inline-flex; align-items: center; gap: 0.25rem;

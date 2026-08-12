@@ -2,6 +2,7 @@
 
 namespace App\Acciones\Application\Accion\List;
 
+use App\Acciones\Domain\Repository\AccionAnalisisRepositoryInterface;
 use App\Acciones\Domain\Repository\AccionEarningsReportRepositoryInterface;
 use App\Acciones\Domain\Repository\AccionEarningsRepositoryInterface;
 use App\Acciones\Domain\Repository\AccionPrecioRepositoryInterface;
@@ -17,6 +18,7 @@ final class ListAccionesUseCase
         private readonly AccionEarningsRepositoryInterface $earningsRepository,
         private readonly AccionEarningsReportRepositoryInterface $earningsReportRepository,
         private readonly PortafolioAccionRepositoryInterface $portafolioAccionRepository,
+        private readonly AccionAnalisisRepositoryInterface $analisisRepository,
     ) {}
 
     public function execute(ListAccionesQuery $query): array
@@ -29,8 +31,9 @@ final class ListAccionesUseCase
         $portafolioMap = $this->portafolioAccionRepository->findFirstByAccionIds($ids);
         $earningsMap = $this->earningsRepository->findByAccionIds($ids);
         $earningsReportMap = $this->earningsReportRepository->findLatestByAccionIds($ids);
+        $analisisMap = $this->analisisRepository->findLatestByAccionIds($ids);
 
-        return array_map(function (Accion $a) use ($portafolioMap, $earningsMap, $earningsReportMap) {
+        return array_map(function (Accion $a) use ($portafolioMap, $earningsMap, $earningsReportMap, $analisisMap) {
             $data = $a->toArray();
             $latest = $this->precioRepository->findByAccion($a, 1);
             if (!empty($latest)) {
@@ -61,6 +64,10 @@ final class ListAccionesUseCase
             $data['earnings_report_uuid'] = $report?->getUuid();
             $data['earnings_report_filing_date'] = $report?->getFilingDate()?->format('Y-m-d');
             $data['earnings_report_form_type'] = $report?->getFormType();
+
+            $analisis = $analisisMap[$a->getId()] ?? null;
+            $data['fair_value'] = $analisis?->getFairValue() !== null ? (float) $analisis->getFairValue() : null;
+            $data['fair_value_method'] = $analisis?->getFairValueMethod();
 
             return $data;
         }, $acciones);

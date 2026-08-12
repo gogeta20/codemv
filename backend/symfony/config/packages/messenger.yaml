@@ -48,3 +48,6 @@ framework:
             App\Futbol\Application\Jugador\GetAnalisis\GetJugadorAnalisisQuery:         sync
             App\Futbol\Application\Liga\ListLigas\ListLigasQuery:                       sync
             App\Futbol\Application\Liga\ToggleLigaActiva\ToggleLigaActivaCommand:       sync
+            App\Acciones\Application\Earnings\FetchLatestReport\FetchLatestEarningsReportCommand: sync
+            App\Acciones\Application\Earnings\GetAnalysis\GetEarningsAnalysisQuery:               sync
+            App\Acciones\Application\Earnings\GetLatestReport\GetLatestEarningsReportQuery:        sync

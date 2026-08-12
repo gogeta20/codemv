@@ -52,6 +52,10 @@ final class MetricExtractorService
 
         $sharesLast   = $this->val($rawIncome, 'outstanding_shares', $lastYear);
         $sharesFirst  = $this->val($rawIncome, 'outstanding_shares', $firstYear);
+        $sharesTtm    = $this->val($rawIncome, 'outstanding_shares', 'TTM') ?? $sharesLast;
+
+        $epsTtm       = $this->val($rawIncome, 'eps_diluted', 'TTM');
+        $epsLastYear  = $this->val($rawIncome, 'eps_diluted', $lastYear);
 
         $costRevTtm   = $this->val($rawIncome, 'cost_of_revenue', 'TTM');
         $costRevLastYear = $this->val($rawIncome, 'cost_of_revenue', $lastYear);
@@ -89,6 +93,8 @@ final class MetricExtractorService
         $curAssLast   = $this->val($rawBalance, 'total_current_assets', 'Last Report');
         $curLiabLast  = $this->val($rawBalance, 'total_current_liabilities', 'Last Report');
         $ltDebtLast   = $this->val($rawBalance, 'long_term_debt', 'Last Report');
+        $totalAssetsLast      = $this->val($rawBalance, 'total_assets', 'Last Report');
+        $totalLiabilitiesLast = $this->val($rawBalance, 'total_liabilities', 'Last Report');
 
         // --- Derived metrics ---
 
@@ -143,6 +149,16 @@ final class MetricExtractorService
             ? $costRev3ago / $rev3agoForCost
             : null;
         $costRevTrend3y     = $this->trendRatioImproving($costRevRatio3ago, $costRevRatioTtm, 0.01);
+
+        $bookValueLast = ($totalAssetsLast !== null && $totalLiabilitiesLast !== null)
+            ? $totalAssetsLast - $totalLiabilitiesLast
+            : null;
+        $bookValuePerShare = ($bookValueLast !== null && $sharesTtm && $sharesTtm != 0)
+            ? $bookValueLast / $sharesTtm
+            : null;
+        $dividendsPerShareTtm = ($sharesTtm && $sharesTtm != 0)
+            ? round($divAbsTtm / $sharesTtm, 4)
+            : null;
 
         $capexTrend3y       = $this->trendAbsolute(
             $capex3ago !== null ? abs($capex3ago) : null,
@@ -211,6 +227,16 @@ final class MetricExtractorService
             'total_debt_trend_3y'  => $debtTrend3y,
             'net_debt_to_ebitda'   => $netDebtToEbitda,
             'current_ratio'        => $currentRatio,
+            'total_assets_last'      => $totalAssetsLast,
+            'total_liabilities_last' => $totalLiabilitiesLast,
+            'book_value_last'        => $bookValueLast,
+            'book_value_per_share'   => $bookValuePerShare,
+
+            // Per-share
+            'eps_ttm'                 => $epsTtm,
+            'eps_last_year'           => $epsLastYear,
+            'shares_outstanding_ttm'  => $sharesTtm,
+            'dividends_per_share_ttm' => $dividendsPerShareTtm,
 
             // Runway
             'runway_years' => $runwayYears,
