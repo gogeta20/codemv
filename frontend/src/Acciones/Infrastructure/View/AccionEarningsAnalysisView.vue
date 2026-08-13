@@ -31,6 +31,11 @@
               <span class="meta-chip">{{ analysis.report.period_label }}</span>
               <span class="meta-chip">{{ analysis.report.form_type }}</span>
               <span class="meta-chip">{{ fmtDate(analysis.report.filing_date) }}</span>
+              <span
+                v-if="analysis.report.is_stale"
+                class="meta-chip meta-chip--stale"
+                :title="analysis.report.stale_reason"
+              ><i class="pi pi-clock" /> Reporte desactualizado</span>
             </div>
             <h2 class="hero-title">{{ analysis.verdict.label }}</h2>
             <p class="hero-title-sub">Veredicto general del trimestre: si el mercado recibió señales de fortaleza, debilidad o mezcla.</p>
@@ -40,7 +45,8 @@
           <div class="hero-score" :class="`hero-score--${analysis.verdict.signal}`">
             <div class="score-label">Score</div>
             <div class="score-label-sub">Puntuación global del reporte</div>
-            <div class="score-value">{{ analysis.verdict.score }}</div>
+            <div v-if="analysis.verdict.signal === 'insufficient_data'" class="score-value score-value--na" title="No hay suficientes métricas extraídas del filing para calcular un score confiable.">N/D</div>
+            <div v-else class="score-value">{{ analysis.verdict.score }}</div>
             <div class="score-signal">{{ signalLabel(analysis.verdict.signal) }}</div>
           </div>
         </div>
@@ -58,7 +64,8 @@
               </div>
               <span class="signal-pill" :class="`signal-pill--${kpi.signal}`">{{ signalLabel(kpi.signal) }}</span>
             </div>
-            <div class="kpi-actual">{{ formatMetric(kpi.actual, kpi.actual_unit) }}</div>
+            <div v-if="kpi.actual == null" class="kpi-actual kpi-actual--na" title="No se pudo extraer este dato del filing (puede que no esté disponible en el formato de este reporte).">N/D</div>
+            <div v-else class="kpi-actual">{{ formatMetric(kpi.actual, kpi.actual_unit) }}</div>
             <div class="kpi-subrows">
               <div v-if="kpi.estimate != null" class="kpi-subrow">
                 <span>Estimado</span>
@@ -235,6 +242,7 @@ function signalLabel(signal) {
   if (signal === 'good') return 'Bueno'
   if (signal === 'bad') return 'Malo'
   if (signal === 'warning') return 'Vigilar'
+  if (signal === 'insufficient_data') return 'Sin datos suficientes'
   return 'Mixto'
 }
 
@@ -333,6 +341,15 @@ function pctClass(value) {
   color: #cbd5e1;
 }
 
+.meta-chip--stale {
+  background: rgba(251, 191, 36, 0.14);
+  color: #fbbf24;
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
 .hero-title {
   margin: 0 0 0.45rem;
   font-size: 1.9rem;
@@ -390,6 +407,10 @@ function pctClass(value) {
   box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.24);
 }
 
+.hero-score--insufficient_data {
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.24);
+}
+
 .score-label {
   color: #cbd5e1;
   font-size: 0.82rem;
@@ -405,6 +426,11 @@ function pctClass(value) {
   font-weight: 800;
   line-height: 1;
   margin: 0.45rem 0;
+}
+
+.score-value--na {
+  color: #cbd5e1;
+  cursor: help;
 }
 
 .score-signal {
@@ -431,6 +457,11 @@ function pctClass(value) {
 
 .kpi-card--bad {
   border-color: rgba(239, 68, 68, 0.28);
+}
+
+.kpi-card--warning {
+  border-color: rgba(245, 158, 11, 0.28);
+  border-style: dashed;
 }
 
 .kpi-head,
@@ -513,6 +544,11 @@ function pctClass(value) {
   font-size: 1.8rem;
   font-weight: 800;
   color: var(--tokyo-fg-strong);
+}
+
+.kpi-actual--na {
+  color: var(--tokyo-fg-dim);
+  cursor: help;
 }
 
 .kpi-subrows {
