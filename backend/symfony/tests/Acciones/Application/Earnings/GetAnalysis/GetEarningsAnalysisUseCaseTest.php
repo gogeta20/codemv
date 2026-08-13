@@ -212,11 +212,17 @@ class GetEarningsAnalysisUseCaseTest extends TestCase
         $epsKpi = $this->kpiByKey($result['kpis'], 'eps');
         $marginKpi = $this->kpiByKey($result['kpis'], 'operating_margin');
         $fcfKpi = $this->kpiByKey($result['kpis'], 'free_cash_flow');
+        $opexKpi = $this->kpiByKey($result['kpis'], 'operating_expenses');
+        $netIncomeKpi = $this->kpiByKey($result['kpis'], 'net_income');
 
         $this->assertEqualsWithDelta(2078.0, $revenueKpi['actual'], 0.1, 'Revenue should read the "Revenue$2,078 $982" no-space two-column line.');
         $this->assertEqualsWithDelta(111.61, $revenueKpi['yoy_pct'], 0.1, 'YoY should be derived from current vs. prior columns when no % is stated.');
         $this->assertEqualsWithDelta(-1.40, $epsKpi['actual'], 0.01);
         $this->assertEqualsWithDelta(-7.0, $marginKpi['actual'], 0.1, 'Should read the directly-disclosed "Operating loss margin(7)%" instead of deriving it.');
+        // Operating expenses derived as revenue (2,078) minus operating loss (-144) = 2,222.
+        $this->assertEqualsWithDelta(2222.0, $opexKpi['actual'], 0.1);
+        $this->assertSame('bad', $opexKpi['signal'], 'Expenses exceeding revenue should read as "bad".');
+        $this->assertEqualsWithDelta(-740.0, $netIncomeKpi['actual'], 0.1, 'Should read the total "Net loss$(740)$(315)" figure, not the Adjusted or per-share ones.');
         // Operating cash flow (2,984) minus capex (7,695, with descriptive text in between the label
         // and the figure) should net to a large negative FCF — CoreWeave's capex-heavy quarter.
         $this->assertEqualsWithDelta(-4711.0, $fcfKpi['actual'], 0.1);

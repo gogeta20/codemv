@@ -164,14 +164,61 @@ final class GetEarningsAnalysisUseCase
 
     private function extractMetrics(string $raw): array
     {
+        $revenue = $this->extractRevenue($raw);
+
         return [
-            'revenue' => $this->extractRevenue($raw),
+            'revenue' => $revenue,
             'eps' => $this->extractEps($raw),
+            'net_income' => $this->extractNetIncomeTotal($raw),
             'operating_margin' => $this->extractAdjustedOperatingMargin($raw),
+            'operating_expenses' => $this->extractOperatingExpenses($raw, $revenue['actual']),
             'free_cash_flow' => $this->extractAdjustedFreeCashFlow($raw),
             'guidance_revenue' => $this->extractFullYearGuidanceRevenue($raw),
             'guidance_revenue_yoy' => $this->extractFullYearGuidanceYoy($raw),
             'cash_position' => $this->extractCashPosition($raw),
+        ];
+    }
+
+    /**
+     * Total net income/loss in $ (not per-share). Explicitly excludes "Adjusted net loss" (a
+     * non-GAAP figure some issuers report right next to the real one) via a negative lookbehind.
+     */
+    private function extractNetIncomeTotal(string $raw): array
+    {
+        if (preg_match('/(?<!Adjusted )Net (?:income|loss)\s*\$?(?<full>\(?[\d,.]+\)?)/iu', $raw, $m) === 1) {
+            return [
+                'actual' => $this->parseSecNumber($m['full']) * $this->detectTableScale($raw),
+                'yoy_pct' => null,
+            ];
+        }
+
+        return ['actual' => null, 'yoy_pct' => null];
+    }
+
+    /**
+     * Total operating expenses in $. Derived as revenue - operating income/loss rather than parsed
+     * directly: the "Operating expenses" subtotal line frequently omits the "$" that anchors our
+     * other patterns and whose column order (current-first vs. prior-first) isn't reliable to guess
+     * on its own — but revenue and operating income are both already extracted with a trustworthy
+     * "current period" value, so the subtraction is safe. Left null when either input is missing.
+     */
+    private function extractOperatingExpenses(string $raw, ?float $revenueActual): array
+    {
+        if ($revenueActual === null) {
+            return ['actual' => null, 'yoy_pct' => null];
+        }
+
+        $operatingIncomeRaw = $this->extractLabeledAmount($raw, 'Operating (?:income|loss)')
+            ?? $this->extractSecondTableValue($raw, 'Loss from operations|Income from operations');
+        if ($operatingIncomeRaw === null) {
+            return ['actual' => null, 'yoy_pct' => null];
+        }
+
+        $operatingIncome = $operatingIncomeRaw * $this->detectTableScale($raw);
+
+        return [
+            'actual' => round($revenueActual - $operatingIncome, 2),
+            'yoy_pct' => null,
         ];
     }
 
@@ -501,11 +548,27 @@ final class GetEarningsAnalysisUseCase
         return $meetsThreshold ? 'good' : 'bad';
     }
 
+    /**
+     * Expenses aren't inherently good or bad on their own — only relative to revenue. 'good' when
+     * the business is operating profitably (expenses under revenue), 'bad' when losing money at the
+     * operating level, 'warning' when either figure is unknown.
+     */
+    private function expenseSignal(?float $expenses, ?float $revenue): string
+    {
+        if ($expenses === null || $revenue === null) {
+            return 'warning';
+        }
+
+        return $expenses <= $revenue ? 'good' : 'bad';
+    }
+
     private function buildKpis(array $metrics): array
     {
         return [
             ['key' => 'revenue', 'label' => 'Revenue', 'subtitle' => 'Ingresos del trimestre', 'actual' => $metrics['revenue']['actual'], 'actual_unit' => 'MUSD', 'estimate' => null, 'surprise_pct' => null, 'yoy_pct' => $metrics['revenue']['yoy_pct'], 'signal' => $this->comparisonSignal($metrics['revenue']['yoy_pct'], 20), 'why_it_matters' => 'Mide si el negocio principal acelera o se enfría. Sin crecimiento real, el quarter pierde fuerza rápido.'],
+            ['key' => 'operating_expenses', 'label' => 'Gasto Operativo', 'subtitle' => 'Costos y gastos totales del trimestre', 'actual' => $metrics['operating_expenses']['actual'], 'actual_unit' => 'MUSD', 'estimate' => null, 'surprise_pct' => null, 'yoy_pct' => null, 'signal' => $this->expenseSignal($metrics['operating_expenses']['actual'], $metrics['revenue']['actual']), 'why_it_matters' => 'Pone el ingreso en contexto: si el gasto crece más rápido que el ingreso, el negocio se vuelve menos eficiente aunque venda más.'],
             ['key' => 'eps', 'label' => 'EPS diluido', 'subtitle' => 'Ganancia por acción para el accionista', 'actual' => $metrics['eps']['actual'], 'actual_unit' => 'USD', 'estimate' => null, 'surprise_pct' => null, 'yoy_pct' => null, 'signal' => $this->comparisonSignal($metrics['eps']['actual'], 0, strictlyGreater: true), 'why_it_matters' => 'Resume la rentabilidad atribuible al accionista. Si el quarter vende mucho pero no deja beneficio, la lectura cambia.'],
+            ['key' => 'net_income', 'label' => 'Resultado Neto', 'subtitle' => 'Ganancia o pérdida total del trimestre', 'actual' => $metrics['net_income']['actual'], 'actual_unit' => 'MUSD', 'estimate' => null, 'surprise_pct' => null, 'yoy_pct' => null, 'signal' => $this->comparisonSignal($metrics['net_income']['actual'], 0, strictlyGreater: true), 'why_it_matters' => 'El número absoluto (no por acción) de cuánto ganó o perdió la empresa en dólares — más fácil de comparar contra el revenue y el gasto operativo.'],
             ['key' => 'operating_margin', 'label' => 'Operating Margin', 'subtitle' => 'Rentabilidad operativa sobre ventas', 'actual' => $metrics['operating_margin']['actual'], 'actual_unit' => '%', 'estimate' => null, 'surprise_pct' => null, 'yoy_pct' => null, 'signal' => $this->comparisonSignal($metrics['operating_margin']['actual'], 20), 'why_it_matters' => 'Nos dice si el crecimiento está entrando con calidad o si se compra a costa de gastar demasiado.'],
             ['key' => 'free_cash_flow', 'label' => 'Free Cash Flow', 'subtitle' => 'Caja libre generada por el negocio', 'actual' => $metrics['free_cash_flow']['actual'], 'actual_unit' => 'MUSD', 'estimate' => null, 'surprise_pct' => null, 'yoy_pct' => null, 'signal' => $this->comparisonSignal($metrics['free_cash_flow']['actual'], 0, strictlyGreater: true), 'why_it_matters' => 'La caja libre reduce el riesgo de que el crecimiento dependa de refinanciación, deuda o dilución.'],
             ['key' => 'guidance_revenue', 'label' => 'Guidance FY revenue', 'subtitle' => 'Previsión de ingresos futura', 'actual' => $metrics['guidance_revenue'], 'actual_unit' => 'MUSD', 'estimate' => null, 'surprise_pct' => null, 'yoy_pct' => $metrics['guidance_revenue_yoy'], 'signal' => $metrics['guidance_revenue'] !== null ? 'good' : 'warning', 'why_it_matters' => 'Si la directiva sube guidance, el mercado interpreta que el quarter no fue un simple accidente aislado.'],
