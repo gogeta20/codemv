@@ -48,7 +48,7 @@ class GetEarningsAnalysisUseCaseTest extends TestCase
     private const NO_SPACE_RAW = <<<'TEXT'
     CoreWeave Reports Strong First Quarter 2026 Results for the quarter ended March 31, 2026.
     Condensed Consolidated Statements of Operations (in millions, except share and per share amounts)
-    Three Months Ended March 31,20262025Revenue$2,078 $982 Operating expenses2,222 1,009 Operating loss$(144)$(27)Operating loss margin(7)%(3)%Interest expense, net$(536)$(264)Net loss$(740)$(315)Net loss margin(36)%(32)%Basic net loss per share$(1.40)$(1.40)Diluted net loss per share$(1.40)$(1.40)
+    Three Months Ended March 31,20262025Revenue$2,078 $982 Operating expenses2,222 1,009 Operating loss$(144)$(27)Operating loss margin(7)%(3)%Interest expense, net$(536)$(264)Loss before income taxes(656)(269)Provision for income taxes84 46 Net loss$(740)$(315)Net loss margin(36)%(32)%Basic net loss per share$(1.40)$(1.40)Diluted net loss per share$(1.40)$(1.40)
     Cash flows from operating activities:Net loss$(740)$(315)Adjustments to reconcile net loss to net cash provided by operating activitiesDepreciation and amortization1,147 443 Net cash provided by operating activities2,984 61 Cash flows from investing activities:Purchase of property and equipment, including capitalized internal-use software(7,695)(1,407)Maturities and sales of marketable securities12 29
     Balance Sheet (unaudited)March 31,2026December 31,2025AssetsCurrent assetsCash and cash equivalents$2,244 $3,127
     TEXT;
@@ -227,6 +227,20 @@ class GetEarningsAnalysisUseCaseTest extends TestCase
         // and the figure) should net to a large negative FCF — CoreWeave's capex-heavy quarter.
         $this->assertEqualsWithDelta(-4711.0, $fcfKpi['actual'], 0.1);
         $this->assertSame('bad', $fcfKpi['signal']);
+
+        $interestKpi = $this->kpiByKey($result['kpis'], 'interest_expense');
+        $taxesKpi = $this->kpiByKey($result['kpis'], 'taxes');
+        $this->assertEqualsWithDelta(536.0, $interestKpi['actual'], 0.1, 'Interest expense should read as a positive cost figure, not the raw negative table value.');
+        // Operating income is negative (-144), so ANY interest expense can't be covered by
+        // operations — the company depends on financing, not operating profit, to pay it.
+        $this->assertSame('bad', $interestKpi['signal']);
+        $this->assertEqualsWithDelta(84.0, $taxesKpi['actual'], 0.1, 'Should read the tax provision even though the company reported a net loss.');
+
+        // Each KPI should be grouped for the frontend's "Resultado / Ingresos / Gastos" layout.
+        $this->assertSame('result', $netIncomeKpi['category']);
+        $this->assertSame('income', $revenueKpi['category']);
+        $this->assertSame('expense', $opexKpi['category']);
+        $this->assertSame('expense', $interestKpi['category']);
     }
 
     public function testDoesNotFlagStalenessWhenReportMatchesTheCurrentQuarter(): void
