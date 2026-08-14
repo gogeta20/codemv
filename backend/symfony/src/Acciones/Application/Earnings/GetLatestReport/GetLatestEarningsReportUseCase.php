@@ -38,14 +38,15 @@ final class GetLatestEarningsReportUseCase
         }
 
         $recent = $this->normalizeRecentFilings($submissions['filings']['recent']);
-        $earningsFiling = $this->findLatestEarningsFiling($recent);
-        if ($earningsFiling === null) {
+        $earningsMatch = $this->findLatestEarningsFiling($recent, $cikRaw);
+        if ($earningsMatch === null) {
             throw new \RuntimeException(sprintf('No encontré un filing reciente de earnings para %s en SEC.', $symbol));
         }
 
+        $earningsFiling = $earningsMatch['filing'];
+        $exhibit = $earningsMatch['exhibit'];
+        $preview = $earningsMatch['preview'];
         $periodicFiling = $this->findLatestPeriodicFiling($recent, $earningsFiling['filingDate']);
-        $exhibit = $this->findExhibit99Document($cikRaw, $earningsFiling['accessionNumber']);
-        $preview = $exhibit !== null ? $this->fetchDocumentPreview($exhibit['url']) : null;
 
         return [
             'source' => 'sec',
@@ -128,7 +129,15 @@ final class GetLatestEarningsReportUseCase
         return $rows;
     }
 
-    private function findLatestEarningsFiling(array $recent): ?array
+    /**
+     * Returns the first candidate filing whose content actually reads like an earnings release.
+     * The SEC `items` metadata field is not reliable for this: foreign private issuers filing 6-K
+     * almost never populate it, so a structurally-eligible filing (right form, right items) can
+     * still be something unrelated to earnings (e.g. an Annual General Meeting notice). We fetch a
+     * preview of the document that would end up being stored and validate its content before
+     * accepting it, moving on to the next candidate otherwise.
+     */
+    private function findLatestEarningsFiling(array $recent, string $cikRaw): ?array
     {
         foreach ($recent as $filing) {
             if (!in_array($filing['form'], self::EARNINGS_FORMS, true)) {
@@ -144,10 +153,47 @@ final class GetLatestEarningsReportUseCase
                 continue;
             }
 
-            return $filing;
+            $exhibit = $this->findExhibit99Document($cikRaw, $filing['accessionNumber']);
+            $documentUrl = $exhibit['url'] ?? $this->buildPrimaryDocumentUrl($cikRaw, $filing['accessionNumber'], $filing['primaryDocument']);
+            $preview = $this->fetchDocumentPreview($documentUrl);
+
+            if (!$this->looksLikeEarningsRelease($preview['preview'] ?? '')) {
+                continue;
+            }
+
+            return ['filing' => $filing, 'exhibit' => $exhibit, 'preview' => $preview];
         }
 
         return null;
+    }
+
+    private function looksLikeEarningsRelease(string $previewText): bool
+    {
+        $lower = strtolower($previewText);
+
+        $governanceSignals = ['annual general meeting', 'notice of annual meeting', 'notice of meeting', 'proxy statement'];
+        foreach ($governanceSignals as $signal) {
+            if (str_contains($lower, $signal)) {
+                return false;
+            }
+        }
+
+        $periodSignals = ['quarter', 'three months ended', 'fiscal year', 'fiscal quarter'];
+        $resultSignals = ['revenue', 'net income', 'net loss', 'financial results'];
+
+        return $this->containsAny($lower, $periodSignals) && $this->containsAny($lower, $resultSignals);
+    }
+
+    /** @param string[] $needles */
+    private function containsAny(string $haystack, array $needles): bool
+    {
+        foreach ($needles as $needle) {
+            if (str_contains($haystack, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function findLatestPeriodicFiling(array $recent, ?string $earningsFilingDate): ?array

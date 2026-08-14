@@ -31,6 +31,11 @@
               <span class="meta-chip">{{ analysis.report.period_label }}</span>
               <span class="meta-chip">{{ analysis.report.form_type }}</span>
               <span class="meta-chip">{{ fmtDate(analysis.report.filing_date) }}</span>
+              <span
+                v-if="analysis.report.is_stale"
+                class="meta-chip meta-chip--stale"
+                :title="analysis.report.stale_reason"
+              ><i class="pi pi-clock" /> Reporte desactualizado</span>
             </div>
             <h2 class="hero-title">{{ analysis.verdict.label }}</h2>
             <p class="hero-title-sub">Veredicto general del trimestre: si el mercado recibió señales de fortaleza, debilidad o mezcla.</p>
@@ -40,7 +45,8 @@
           <div class="hero-score" :class="`hero-score--${analysis.verdict.signal}`">
             <div class="score-label">Score</div>
             <div class="score-label-sub">Puntuación global del reporte</div>
-            <div class="score-value">{{ analysis.verdict.score }}</div>
+            <div v-if="analysis.verdict.signal === 'insufficient_data'" class="score-value score-value--na" title="No hay suficientes métricas extraídas del filing para calcular un score confiable.">N/D</div>
+            <div v-else class="score-value">{{ analysis.verdict.score }}</div>
             <div class="score-signal">{{ signalLabel(analysis.verdict.signal) }}</div>
           </div>
         </div>
@@ -48,33 +54,44 @@
 
       <section class="detail-section">
         <h2 class="section-title"><i class="pi pi-table" /> KPIs que deciden si el reporte fue bueno o malo</h2>
-        <p class="section-subtitle">KPI significa <strong>Key Performance Indicator</strong>: una métrica clave del negocio que ayuda a juzgar el trimestre.</p>
-        <div class="kpi-grid">
-          <article v-for="kpi in analysis.kpis" :key="kpi.key" class="kpi-card" :class="`kpi-card--${kpi.signal}`">
-            <div class="kpi-head">
-              <div>
-                <span class="kpi-title">{{ kpi.label }}</span>
-                <div class="kpi-title-sub">{{ kpi.subtitle || technicalSpanish(kpi.key) }}</div>
-              </div>
-              <span class="signal-pill" :class="`signal-pill--${kpi.signal}`">{{ signalLabel(kpi.signal) }}</span>
+        <p class="section-subtitle">KPI significa <strong>Key Performance Indicator</strong>: una métrica clave del negocio que ayuda a juzgar el trimestre. Organizado como se lee un estado de resultados: primero el veredicto, luego lo que entra, luego lo que se resta.</p>
+
+        <div v-for="group in kpiGroups" :key="group.key" class="kpi-row">
+          <div class="kpi-row-head">
+            <i :class="`pi ${group.icon}`" />
+            <div>
+              <h3 class="kpi-row-title">{{ group.title }}</h3>
+              <p class="kpi-row-subtitle">{{ group.subtitle }}</p>
             </div>
-            <div class="kpi-actual">{{ formatMetric(kpi.actual, kpi.actual_unit) }}</div>
-            <div class="kpi-subrows">
-              <div v-if="kpi.estimate != null" class="kpi-subrow">
-                <span>Estimado</span>
-                <strong>{{ formatMetric(kpi.estimate, kpi.actual_unit) }}</strong>
+          </div>
+          <div class="kpi-grid">
+            <article v-for="kpi in group.items" :key="kpi.key" class="kpi-card" :class="`kpi-card--${kpi.signal}`">
+              <div class="kpi-head">
+                <div>
+                  <span class="kpi-title">{{ kpi.label }}</span>
+                  <div class="kpi-title-sub">{{ kpi.subtitle || technicalSpanish(kpi.key) }}</div>
+                </div>
+                <span class="signal-pill" :class="`signal-pill--${kpi.signal}`">{{ signalLabel(kpi.signal) }}</span>
               </div>
-              <div v-if="kpi.surprise_pct != null" class="kpi-subrow">
-                <span>Sorpresa</span>
-                <strong :class="pctClass(kpi.surprise_pct)">{{ signedPct(kpi.surprise_pct) }}</strong>
+              <div v-if="kpi.actual == null" class="kpi-actual kpi-actual--na" title="No se pudo extraer este dato del filing (puede que no esté disponible en el formato de este reporte).">N/D</div>
+              <div v-else class="kpi-actual">{{ formatMetric(kpi.actual, kpi.actual_unit) }}</div>
+              <div class="kpi-subrows">
+                <div v-if="kpi.estimate != null" class="kpi-subrow">
+                  <span>Estimado</span>
+                  <strong>{{ formatMetric(kpi.estimate, kpi.actual_unit) }}</strong>
+                </div>
+                <div v-if="kpi.surprise_pct != null" class="kpi-subrow">
+                  <span>Sorpresa</span>
+                  <strong :class="pctClass(kpi.surprise_pct)">{{ signedPct(kpi.surprise_pct) }}</strong>
+                </div>
+                <div v-if="kpi.yoy_pct != null" class="kpi-subrow">
+                  <span>YoY</span>
+                  <strong :class="pctClass(kpi.yoy_pct)">{{ signedPct(kpi.yoy_pct) }}</strong>
+                </div>
               </div>
-              <div v-if="kpi.yoy_pct != null" class="kpi-subrow">
-                <span>YoY</span>
-                <strong :class="pctClass(kpi.yoy_pct)">{{ signedPct(kpi.yoy_pct) }}</strong>
-              </div>
-            </div>
-            <p class="kpi-why">{{ kpi.why_it_matters }}</p>
-          </article>
+              <p class="kpi-why">{{ kpi.why_it_matters }}</p>
+            </article>
+          </div>
         </div>
       </section>
 
@@ -158,7 +175,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import { GetEarningsAnalysisUseCase } from '@/Acciones/Application/UseCase/GetEarningsAnalysis/GetEarningsAnalysisUseCase'
@@ -168,6 +185,21 @@ const route = useRoute()
 const loading = ref(true)
 const error = ref(null)
 const analysis = ref(null)
+
+const KPI_GROUPS = [
+  { key: 'result', title: 'Resultado del trimestre', icon: 'pi-flag', subtitle: 'El veredicto final: cuánto ganó o perdió la empresa y si eso se tradujo en caja real.' },
+  { key: 'income', title: 'Ingresos', icon: 'pi-arrow-down-left', subtitle: 'Lo que entró este trimestre, y lo que la empresa dice que va a entrar.' },
+  { key: 'expense', title: 'Gastos', icon: 'pi-arrow-up-right', subtitle: 'Todo lo que se resta entre el revenue y el resultado neto, en el orden en que realmente se resta.' },
+  { key: 'context', title: 'Contexto de mercado', icon: 'pi-chart-line', subtitle: 'No es parte del estado de resultados: es sobre cómo está pagando el mercado por lo anterior.' }
+]
+
+const kpiGroups = computed(() => {
+  if (!analysis.value?.kpis) return []
+  return KPI_GROUPS.map(group => ({
+    ...group,
+    items: analysis.value.kpis.filter(kpi => (kpi.category || 'context') === group.key)
+  })).filter(group => group.items.length > 0)
+})
 
 const glossary = [
   {
@@ -235,6 +267,7 @@ function signalLabel(signal) {
   if (signal === 'good') return 'Bueno'
   if (signal === 'bad') return 'Malo'
   if (signal === 'warning') return 'Vigilar'
+  if (signal === 'insufficient_data') return 'Sin datos suficientes'
   return 'Mixto'
 }
 
@@ -333,6 +366,15 @@ function pctClass(value) {
   color: #cbd5e1;
 }
 
+.meta-chip--stale {
+  background: rgba(251, 191, 36, 0.14);
+  color: #fbbf24;
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
 .hero-title {
   margin: 0 0 0.45rem;
   font-size: 1.9rem;
@@ -390,6 +432,10 @@ function pctClass(value) {
   box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.24);
 }
 
+.hero-score--insufficient_data {
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.24);
+}
+
 .score-label {
   color: #cbd5e1;
   font-size: 0.82rem;
@@ -407,9 +453,50 @@ function pctClass(value) {
   margin: 0.45rem 0;
 }
 
+.score-value--na {
+  color: #cbd5e1;
+  cursor: help;
+}
+
 .score-signal {
   font-size: 0.92rem;
   color: #e2e8f0;
+}
+
+.kpi-row {
+  margin-bottom: 1.5rem;
+}
+
+.kpi-row:last-child {
+  margin-bottom: 0;
+}
+
+.kpi-row-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--tokyo-border);
+}
+
+.kpi-row-head > i {
+  margin-top: 0.2rem;
+  color: var(--tokyo-fg-dim);
+}
+
+.kpi-row-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--tokyo-fg);
+}
+
+.kpi-row-subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  color: var(--tokyo-fg-dim);
+  line-height: 1.4;
 }
 
 .kpi-grid {
@@ -431,6 +518,11 @@ function pctClass(value) {
 
 .kpi-card--bad {
   border-color: rgba(239, 68, 68, 0.28);
+}
+
+.kpi-card--warning {
+  border-color: rgba(245, 158, 11, 0.28);
+  border-style: dashed;
 }
 
 .kpi-head,
@@ -513,6 +605,11 @@ function pctClass(value) {
   font-size: 1.8rem;
   font-weight: 800;
   color: var(--tokyo-fg-strong);
+}
+
+.kpi-actual--na {
+  color: var(--tokyo-fg-dim);
+  cursor: help;
 }
 
 .kpi-subrows {
