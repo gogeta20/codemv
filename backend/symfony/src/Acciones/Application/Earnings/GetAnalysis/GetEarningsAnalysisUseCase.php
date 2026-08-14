@@ -20,7 +20,10 @@ final class GetEarningsAnalysisUseCase
      * this, a plain "Revenues?" pattern can match "Cost of revenue $25,207 $17,677" instead of
      * "Total revenue $131,138 $113,276" simply because it appears earlier in the document.
      */
-    private const REVENUE_LABEL_PATTERN = '(?<!of )(?<!Deferred )Revenues?';
+    // The optional trailing `[^0-9($.]{0,40}` tolerates short descriptive text between the label and
+    // the actual figure, e.g. "Total revenues and grant income $54.6 million" (X-Energy) — mirrors
+    // the same gap-tolerance already used for the capex line in extractAdjustedFreeCashFlow().
+    private const REVENUE_LABEL_PATTERN = '(?<!of )(?<!Deferred )Revenues?(?:[^0-9($.]{0,40})?';
 
     public function __construct(
         private readonly AccionRepositoryInterface $accionRepository,
@@ -130,6 +133,17 @@ final class GetEarningsAnalysisUseCase
         return 1 / 1000;
     }
 
+    /** Converts an inline "million"/"billion" unit word (already in $, so scale is relative to
+     * MUSD) straight to a scale factor, without needing to consult detectTableScale() at all. */
+    private function scaleFromUnitWord(string $unit): ?float
+    {
+        return match (strtolower($unit)) {
+            'billion' => 1000.0,
+            'million' => 1.0,
+            default => null,
+        };
+    }
+
     /**
      * Matches "<label> <amount>" where amount may carry a leading "$" and/or be wrapped in
      * parentheses to denote a negative (e.g. "Operating loss (20,052)"). Returns the raw amount in
@@ -144,7 +158,7 @@ final class GetEarningsAnalysisUseCase
         // alternation (e.g. "Foo|Bar"), and without the wrapper the trailing amount pattern would
         // only apply to the last alternative, leaving the (?<full>...) group uncaptured for the
         // others.
-        if (preg_match('/(?:' . $labelPattern . ')\s*\$?(?<full>\(?\d[\d,]*\)?)/iu', $raw, $m, PREG_OFFSET_CAPTURE) !== 1 || !isset($m['full'])) {
+        if (preg_match('/(?:' . $labelPattern . ')\s*\$?(?<full>\(?\d[\d,.]*\)?)/iu', $raw, $m, PREG_OFFSET_CAPTURE) !== 1 || !isset($m['full'])) {
             return null;
         }
 
@@ -213,7 +227,7 @@ final class GetEarningsAnalysisUseCase
      */
     private function extractNetIncomeTotal(string $raw): array
     {
-        if (preg_match('/(?<!Adjusted )Net (?:income|loss)\s*\$?(?<full>\(?\d[\d,.]*\)?)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
+        if (preg_match('/(?<!Adjusted )Net (?:income|loss)\s*\$?(?<full>\(?\d[\d,.]*\)?|—)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
             return [
                 'actual' => $this->parseSecNumber($m['full'][0]) * $this->detectTableScale($raw, $m[0][1]),
                 'yoy_pct' => null,
@@ -230,7 +244,10 @@ final class GetEarningsAnalysisUseCase
      */
     private function extractInterestExpense(string $raw): array
     {
-        if (preg_match('/Interest expense,?\s*net\s*\$?(?<full>\(?\d[\d,.]*\)?)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
+        // ", net" is optional: some issuers report interest expense and interest income netted
+        // together on one line ("Interest expense, net"), others report them on separate lines
+        // ("Interest expense" / "Interest income") — the bare label covers both.
+        if (preg_match('/Interest expense(?:,?\s*net)?\s*\$?(?<full>\(?\d[\d,.]*\)?|—)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
             return [
                 'actual' => abs($this->parseSecNumber($m['full'][0])) * $this->detectTableScale($raw, $m[0][1]),
                 'yoy_pct' => null,
@@ -247,7 +264,7 @@ final class GetEarningsAnalysisUseCase
      */
     private function extractTaxes(string $raw): array
     {
-        if (preg_match('/Provision for income taxes\s*\$?(?<full>\(?\d[\d,.]*\)?)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
+        if (preg_match('/(?:Provision for income taxes|Income tax expense)\s*\$?(?<full>\(?\d[\d,.]*\)?|—)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
             return [
                 'actual' => abs($this->parseSecNumber($m['full'][0])) * $this->detectTableScale($raw, $m[0][1]),
                 'yoy_pct' => null,
@@ -317,7 +334,7 @@ final class GetEarningsAnalysisUseCase
         // figure, e.g. "Revenue$2,078 $982" (current quarter, prior-year quarter side by side —
         // common in GAAP income-statement tables that don't spell out a YoY %). Derives yoy_pct
         // ourselves from the two figures instead of leaving it null.
-        if (preg_match('/' . self::REVENUE_LABEL_PATTERN . '\s*\$(?<current>\d[\d,]*|—)\s*\$(?<prior>\d[\d,]*|—)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
+        if (preg_match('/' . self::REVENUE_LABEL_PATTERN . '\s*\$(?<current>\d[\d,.]*|—)\s*\$(?<prior>\d[\d,.]*|—)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
             $current = $this->parseSecNumber($m['current'][0]);
             $prior = $this->parseSecNumber($m['prior'][0]);
             return [
@@ -327,9 +344,14 @@ final class GetEarningsAnalysisUseCase
         }
 
         // Tabular financial-statement fallback: "Revenues .... $61" (dot-leaders already collapsed).
-        if (preg_match('/' . self::REVENUE_LABEL_PATTERN . '\s*\$(?<value>\d[\d,]*|—)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
+        // Also covers an opening bullet like "Revenues and grant income of $54.6 million" — when the
+        // matched figure is immediately followed by "million"/"billion", that beats any document-wide
+        // scale lookup, since this can be the very first mention of revenue in the whole release,
+        // before any table (and its own scale declaration) has even appeared yet.
+        if (preg_match('/' . self::REVENUE_LABEL_PATTERN . '\s*\$(?<value>\d[\d,.]*|—)\s*(?<unit>million|billion)?/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
+            $scale = $this->scaleFromUnitWord($m['unit'][0] ?? '') ?? $this->detectTableScale($raw, $m[0][1]);
             return [
-                'actual' => $this->parseSecNumber($m['value'][0]) * $this->detectTableScale($raw, $m[0][1]),
+                'actual' => $this->parseSecNumber($m['value'][0]) * $scale,
                 'yoy_pct' => null,
             ];
         }
@@ -468,7 +490,7 @@ final class GetEarningsAnalysisUseCase
      */
     private function extractRawTabularRevenue(string $raw): ?float
     {
-        if (preg_match('/' . self::REVENUE_LABEL_PATTERN . '\s+\$(?<value>\d[\d,]*|—)/iu', $raw, $m) !== 1) {
+        if (preg_match('/' . self::REVENUE_LABEL_PATTERN . '\s+\$(?<value>\d[\d,.]*|—)/iu', $raw, $m) !== 1) {
             return null;
         }
 
@@ -542,7 +564,7 @@ final class GetEarningsAnalysisUseCase
 
         // Tabular fallback: balance sheet "Cash and cash equivalents $X" line (also matches with no
         // gap at all, e.g. "Cash and cash equivalents$2,244").
-        if (preg_match('/Cash and cash equivalents\s*\$(?<value>\d[\d,]*)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
+        if (preg_match('/Cash and cash equivalents\s*\$(?<value>\d[\d,.]*)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
             return $this->parseSecNumber($m['value'][0]) * $this->detectTableScale($raw, $m[0][1]);
         }
 

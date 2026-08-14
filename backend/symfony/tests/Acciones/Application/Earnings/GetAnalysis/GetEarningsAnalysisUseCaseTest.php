@@ -69,7 +69,7 @@ class GetEarningsAnalysisUseCaseTest extends TestCase
     // millions" near the top, followed by the exact GAAP statements declared "(in thousands...)"
     // further down — the same document uses two different scales for two different tables.
     private const MIXED_SCALE_RAW = <<<'TEXT'
-    X-energy Reports Second Quarter 2026 Results
+    X-energy Reports Second Quarter 2026 Results •Revenues and grant income of $54.6 million, compared to revenues and grant income of $21.5 million in 2Q 2025
     Financial Results (Dollars in millions) Three Months Ended June 30, 2026 2025 % Change Total revenues and grant income 54.6 21.5 154%
     X-ENERGY, INC. CONDENSED CONSOLIDATED STATEMENTS OF OPERATIONS (in thousands, except share and per share amounts) (unaudited) Three Months Ended June 30, 2026 2025
     Net loss (105,333 ) (88,848 )
@@ -326,12 +326,18 @@ class GetEarningsAnalysisUseCaseTest extends TestCase
         $result = $this->useCase->execute($accion->getUuid());
 
         $netIncomeKpi = $this->kpiByKey($result['kpis'], 'net_income');
+        $revenueKpi = $this->kpiByKey($result['kpis'], 'revenue');
 
         // The "(Dollars in millions)" declaration near the top of the document belongs to the
         // highlights table, not to the GAAP statements further down that declare "(in thousands...)"
         // right before their own figures. A document-wide scale scan would treat -105,333 (thousands)
         // as if it were already in millions and report a net loss of -$105 BILLION.
         $this->assertEqualsWithDelta(-105.333, $netIncomeKpi['actual'], 0.001);
+
+        // Revenue is first mentioned in the opening bullet, before ANY scale declaration appears in
+        // the document at all — but the bullet spells out "$54.6 million" inline, which must be used
+        // directly instead of falling back to a (nonexistent-yet) nearby table declaration.
+        $this->assertEqualsWithDelta(54.6, $revenueKpi['actual'], 0.01);
     }
 
     private function kpiByKey(array $kpis, string $key): array
