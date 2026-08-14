@@ -523,7 +523,8 @@ final class GetEarningsAnalysisUseCase
         // (e.g. "Purchase of property and equipment, including capitalized internal-use
         // software(7,695)"), so the label pattern tolerates a short non-numeric gap before the
         // amount instead of requiring it immediately after.
-        $operatingCashFlowMatch = $this->extractLabeledAmount($raw, 'Net cash (?:provided by|used in) operating activities');
+        // "Net cash flows used in..." (with "flows") is just as common as "Net cash used in...".
+        $operatingCashFlowMatch = $this->extractLabeledAmount($raw, 'Net cash (?:flows? )?(?:provided by|used in) operating activities');
         $capexMatch = $this->extractLabeledAmount($raw, '(?:Purchases? of property(?:,? plant(?:,? and|,) equipment)?|Capital expenditures)[^0-9($]{0,80}');
         if ($operatingCashFlowMatch !== null && $capexMatch !== null) {
             $scale = $this->detectTableScale($raw, $operatingCashFlowMatch['offset']);

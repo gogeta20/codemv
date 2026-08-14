@@ -77,6 +77,16 @@ class GetEarningsAnalysisUseCaseTest extends TestCase
     Net cash used in operating activities (97,300 ) (20,000 )
     TEXT;
 
+    // Mirrors the real Cerebras (CBRS) 8-K earnings exhibit: the operating cash flow line says
+    // "Net cash flows used in..." (with "flows"), not the "Net cash used in..." phrasing the pattern
+    // was originally written for.
+    private const FLOWS_WORD_RAW = <<<'TEXT'
+    Cerebras Systems announces second quarter 2026 results (in thousands)
+    Cash flows from operating activities: Net income (loss)$(464,534)$285,645
+    Net cash flows used in operating activities$(47,488)$(123,843)
+    Cash flows from investing activities: Purchases of property and equipment$(548,873)$(185,094)
+    TEXT;
+
     private AccionRepositoryInterface $accionRepository;
     private AccionEarningsReportRepositoryInterface $earningsReportRepository;
     private AccionEarningsRepositoryInterface $accionEarningsRepository;
@@ -338,6 +348,25 @@ class GetEarningsAnalysisUseCaseTest extends TestCase
         // the document at all — but the bullet spells out "$54.6 million" inline, which must be used
         // directly instead of falling back to a (nonexistent-yet) nearby table declaration.
         $this->assertEqualsWithDelta(54.6, $revenueKpi['actual'], 0.01);
+    }
+
+    public function testReadsOperatingCashFlowWhenLabeledWithTheWordFlows(): void
+    {
+        $accion = new Accion('66666666-6666-6666-6666-666666666666', 'CBRS', 'Cerebras Systems Inc.', 'stock');
+        $report = $this->buildReport($accion, self::FLOWS_WORD_RAW);
+
+        $this->accionRepository->method('findByUuid')->willReturn($accion);
+        $this->earningsReportRepository->method('findLatestByAccion')->willReturn($report);
+        $this->accionEarningsRepository->method('findByAccion')->willReturn(null);
+
+        $result = $this->useCase->execute($accion->getUuid());
+
+        $fcfKpi = $this->kpiByKey($result['kpis'], 'free_cash_flow');
+
+        // Operating cash flow (-47,488) minus capex (548,873) = -596,361 (thousands) = -596.361M.
+        // Previously stayed N/D entirely because "Net cash flows used in..." didn't match a pattern
+        // written only for "Net cash used in...".
+        $this->assertEqualsWithDelta(-596.361, $fcfKpi['actual'], 0.01);
     }
 
     private function kpiByKey(array $kpis, string $key): array
