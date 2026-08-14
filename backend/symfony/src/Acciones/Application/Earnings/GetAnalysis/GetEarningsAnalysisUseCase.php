@@ -14,6 +14,14 @@ final class GetEarningsAnalysisUseCase
      * is very likely a past quarter, not the one that just moved the market. */
     private const STALE_THRESHOLD_DAYS = 70;
 
+    /**
+     * "Revenue"/"Revenues" excluding when it's part of "cost of revenue" or "deferred revenue" —
+     * both real line items that contain the word "revenue" but aren't the top-line figure. Without
+     * this, a plain "Revenues?" pattern can match "Cost of revenue $25,207 $17,677" instead of
+     * "Total revenue $131,138 $113,276" simply because it appears earlier in the document.
+     */
+    private const REVENUE_LABEL_PATTERN = '(?<!of )(?<!Deferred )Revenues?';
+
     public function __construct(
         private readonly AccionRepositoryInterface $accionRepository,
         private readonly AccionEarningsReportRepositoryInterface $earningsReportRepository,
@@ -123,7 +131,7 @@ final class GetEarningsAnalysisUseCase
         // alternation (e.g. "Foo|Bar"), and without the wrapper the trailing amount pattern would
         // only apply to the last alternative, leaving the (?<full>...) group uncaptured for the
         // others.
-        if (preg_match('/(?:' . $labelPattern . ')\s*\$?(?<full>\(?[\d,]+\)?)/iu', $raw, $m) !== 1 || !isset($m['full'])) {
+        if (preg_match('/(?:' . $labelPattern . ')\s*\$?(?<full>\(?\d[\d,]*\)?)/iu', $raw, $m) !== 1 || !isset($m['full'])) {
             return null;
         }
 
@@ -137,7 +145,7 @@ final class GetEarningsAnalysisUseCase
      */
     private function extractHighlightRow(string $raw, string $labelPattern): ?array
     {
-        if (preg_match('/(?:' . $labelPattern . ')\s+(?<prior>-?\(?[\d,.]+\)?|—)\s+(?<current>-?\(?[\d,.]+\)?|—)\s+(?<yoy>-?[\d,.]+)%/iu', $raw, $m) !== 1) {
+        if (preg_match('/(?:' . $labelPattern . ')\s+(?<prior>-?\(?\d[\d,.]*\)?|—)\s+(?<current>-?\(?\d[\d,.]*\)?|—)\s+(?<yoy>-?\d[\d,.]*)%/iu', $raw, $m) !== 1) {
             return null;
         }
 
@@ -155,7 +163,7 @@ final class GetEarningsAnalysisUseCase
      */
     private function extractSecondTableValue(string $raw, string $labelPattern): ?float
     {
-        if (preg_match('/(?:' . $labelPattern . ')\s+(?<prior>-?\(?[\d,.]+\)?|—)\s+(?<current>-?\(?[\d,.]+\)?|—)/iu', $raw, $m) !== 1) {
+        if (preg_match('/(?:' . $labelPattern . ')\s+(?<prior>-?\(?\d[\d,.]*\)?|—)\s+(?<current>-?\(?\d[\d,.]*\)?|—)/iu', $raw, $m) !== 1) {
             return null;
         }
 
@@ -187,7 +195,7 @@ final class GetEarningsAnalysisUseCase
      */
     private function extractNetIncomeTotal(string $raw): array
     {
-        if (preg_match('/(?<!Adjusted )Net (?:income|loss)\s*\$?(?<full>\(?[\d,.]+\)?)/iu', $raw, $m) === 1) {
+        if (preg_match('/(?<!Adjusted )Net (?:income|loss)\s*\$?(?<full>\(?\d[\d,.]*\)?)/iu', $raw, $m) === 1) {
             return [
                 'actual' => $this->parseSecNumber($m['full']) * $this->detectTableScale($raw),
                 'yoy_pct' => null,
@@ -204,7 +212,7 @@ final class GetEarningsAnalysisUseCase
      */
     private function extractInterestExpense(string $raw): array
     {
-        if (preg_match('/Interest expense,?\s*net\s*\$?(?<full>\(?[\d,.]+\)?)/iu', $raw, $m) === 1) {
+        if (preg_match('/Interest expense,?\s*net\s*\$?(?<full>\(?\d[\d,.]*\)?)/iu', $raw, $m) === 1) {
             return [
                 'actual' => abs($this->parseSecNumber($m['full'])) * $this->detectTableScale($raw),
                 'yoy_pct' => null,
@@ -221,7 +229,7 @@ final class GetEarningsAnalysisUseCase
      */
     private function extractTaxes(string $raw): array
     {
-        if (preg_match('/Provision for income taxes\s*\$?(?<full>\(?[\d,.]+\)?)/iu', $raw, $m) === 1) {
+        if (preg_match('/Provision for income taxes\s*\$?(?<full>\(?\d[\d,.]*\)?)/iu', $raw, $m) === 1) {
             return [
                 'actual' => abs($this->parseSecNumber($m['full'])) * $this->detectTableScale($raw),
                 'yoy_pct' => null,
@@ -260,17 +268,30 @@ final class GetEarningsAnalysisUseCase
 
     private function extractRevenue(string $raw): array
     {
-        if (preg_match('/Revenue\$?(?<value>[\d,]+)\s*Year-over-year growth\s*(?<yoy>[\d.]+)\s*%/iu', $raw, $m) === 1) {
+        if (preg_match('/Revenue\$?(?<value>\d[\d,]*)\s*Year-over-year growth\s*(?<yoy>\d[\d.]*)\s*%/iu', $raw, $m) === 1) {
             return [
                 'actual' => $this->thousandsToMillions($m['value']),
                 'yoy_pct' => (float) $m['yoy'],
             ];
         }
 
-        if (preg_match('/Revenue grew\s*(?<yoy>[\d.]+)%\s*year-over-year[^$]+\$(?<value>[\d.]+)\s*billion/iu', $raw, $m) === 1) {
+        if (preg_match('/Revenue grew\s*(?<yoy>\d[\d.]*)%\s*year-over-year[^$]+\$(?<value>\d[\d.]*)\s*billion/iu', $raw, $m) === 1) {
             return [
                 'actual' => (float) $m['value'] * 1000,
                 'yoy_pct' => (float) $m['yoy'],
+            ];
+        }
+
+        // Highlights-bullet prose: "Revenue of $131.1 million, up 16% year-over-year" (or "down").
+        // Preferred over the tabular fallbacks below when available: it's an unambiguous,
+        // single-number statement instead of a guess about which column/row in a dense table is the
+        // real one — that ambiguity is exactly what previously caused a "Cost of revenue" line to be
+        // read as if it were total revenue.
+        if (preg_match('/Revenue of \$(?<value>\d[\d.]*)\s*million,\s*(?<direction>up|down)\s*(?<yoy>\d[\d.]*)%\s*year-over-year/iu', $raw, $m) === 1) {
+            $yoy = (float) $m['yoy'];
+            return [
+                'actual' => (float) $m['value'],
+                'yoy_pct' => strtolower($m['direction']) === 'down' ? -$yoy : $yoy,
             ];
         }
 
@@ -278,7 +299,7 @@ final class GetEarningsAnalysisUseCase
         // figure, e.g. "Revenue$2,078 $982" (current quarter, prior-year quarter side by side —
         // common in GAAP income-statement tables that don't spell out a YoY %). Derives yoy_pct
         // ourselves from the two figures instead of leaving it null.
-        if (preg_match('/Revenues?\s*\$(?<current>[\d,]+|—)\s*\$(?<prior>[\d,]+|—)/iu', $raw, $m) === 1) {
+        if (preg_match('/' . self::REVENUE_LABEL_PATTERN . '\s*\$(?<current>\d[\d,]*|—)\s*\$(?<prior>\d[\d,]*|—)/iu', $raw, $m) === 1) {
             $current = $this->parseSecNumber($m['current']);
             $prior = $this->parseSecNumber($m['prior']);
             return [
@@ -288,7 +309,7 @@ final class GetEarningsAnalysisUseCase
         }
 
         // Tabular financial-statement fallback: "Revenues .... $61" (dot-leaders already collapsed).
-        if (preg_match('/Revenues?\s*\$(?<value>[\d,]+|—)/iu', $raw, $m) === 1) {
+        if (preg_match('/' . self::REVENUE_LABEL_PATTERN . '\s*\$(?<value>\d[\d,]*|—)/iu', $raw, $m) === 1) {
             return [
                 'actual' => $this->parseSecNumber($m['value']) * $this->detectTableScale($raw),
                 'yoy_pct' => null,
@@ -297,7 +318,7 @@ final class GetEarningsAnalysisUseCase
 
         // Highlights-table fallback (no "$", figures already in the stated table unit): "Revenues
         // 105.1 582.3 454%" -> current=582.3, yoy=454%.
-        $highlight = $this->extractHighlightRow($raw, 'Revenues?');
+        $highlight = $this->extractHighlightRow($raw, self::REVENUE_LABEL_PATTERN);
         if ($highlight !== null) {
             return [
                 'actual' => $highlight['current'] * $this->detectTableScale($raw),
@@ -310,7 +331,7 @@ final class GetEarningsAnalysisUseCase
 
     private function extractEps(string $raw): array
     {
-        if (preg_match('/GAAP EPS(?:, Diluted)?\$?(?<value>[\d.]+)/iu', $raw, $m) === 1) {
+        if (preg_match('/GAAP EPS(?:, Diluted)?\$?(?<value>\d[\d.]*)/iu', $raw, $m) === 1) {
             return [
                 'actual' => (float) $m['value'],
                 'yoy_pct' => null,
@@ -322,7 +343,7 @@ final class GetEarningsAnalysisUseCase
         // "Net loss per share information: Net loss ... $(31,830)" (that's the aggregate dollar
         // figure, not a per-share one — and its comma-grouped amount would otherwise get truncated
         // by the decimal-only character class into a wrong number).
-        if (preg_match('/Net (?:income|loss) per (?:common )?share attributable to common (?:stockholders|shareholders)[^$]{0,160}\$(?<full>\(?[\d.]+\)?)/iu', $raw, $m) === 1) {
+        if (preg_match('/Net (?:income|loss) per (?:common )?share attributable to common (?:stockholders|shareholders)[^$]{0,160}\$(?<full>\(?\d[\d.]*\)?)/iu', $raw, $m) === 1) {
             return [
                 'actual' => $this->parseSecNumber($m['full']),
                 'yoy_pct' => null,
@@ -332,14 +353,14 @@ final class GetEarningsAnalysisUseCase
         // No-space tabular fallback: "Diluted net loss per share$(1.40)" (no gap between the label
         // and "$", common in condensed GAAP statements). Diluted preferred over Basic when both are
         // present, since it's the more conservative/standard figure.
-        if (preg_match('/Diluted net (?:income|loss) per share\s*\$(?<full>\(?[\d.]+\)?)/iu', $raw, $m) === 1) {
+        if (preg_match('/Diluted net (?:income|loss) per share\s*\$(?<full>\(?\d[\d.]*\)?)/iu', $raw, $m) === 1) {
             return [
                 'actual' => $this->parseSecNumber($m['full']),
                 'yoy_pct' => null,
             ];
         }
 
-        if (preg_match('/Basic net (?:income|loss) per share\s*\$(?<full>\(?[\d.]+\)?)/iu', $raw, $m) === 1) {
+        if (preg_match('/Basic net (?:income|loss) per share\s*\$(?<full>\(?\d[\d.]*\)?)/iu', $raw, $m) === 1) {
             return [
                 'actual' => $this->parseSecNumber($m['full']),
                 'yoy_pct' => null,
@@ -351,7 +372,7 @@ final class GetEarningsAnalysisUseCase
         // value after "Diluted"). Deliberately anchored on the aggregate "Net income / (loss) per
         // ... share" label (not "... from continuing operations" / "... from discontinued
         // operations", which report the same shape but only part of the total).
-        if (preg_match('/Net income \/ \(loss\) per (?:Class ?A and Class ?B|common)\s*share:.*?Diluted\s+(?<prior>-?\(?[\d,.]+\)?|—)\s+(?<current>-?\(?[\d,.]+\)?|—)/isu', $raw, $m) === 1) {
+        if (preg_match('/Net income \/ \(loss\) per (?:Class ?A and Class ?B|common)\s*share:.*?Diluted\s+(?<prior>-?\(?\d[\d,.]*\)?|—)\s+(?<current>-?\(?\d[\d,.]*\)?|—)/isu', $raw, $m) === 1) {
             return [
                 'actual' => $this->parseSecNumber($m['current']),
                 'yoy_pct' => null,
@@ -363,7 +384,7 @@ final class GetEarningsAnalysisUseCase
 
     private function extractAdjustedOperatingMargin(string $raw): array
     {
-        if (preg_match('/Adjusted Income from Operations\$?(?<value>[\d,]+)\s*(?<margin>[\d.]+)\s*%/iu', $raw, $m) === 1) {
+        if (preg_match('/Adjusted Income from Operations\$?(?<value>\d[\d,]*)\s*(?<margin>\d[\d.]*)\s*%/iu', $raw, $m) === 1) {
             return [
                 'actual' => (float) $m['margin'],
                 'value_musd' => $this->thousandsToMillions($m['value']),
@@ -371,7 +392,7 @@ final class GetEarningsAnalysisUseCase
             ];
         }
 
-        if (preg_match('/Adjusted income from operations of \$(?<value>[\d.]+)\s*billion, representing a\s*(?<margin>[\d.]+)%\s*margin/iu', $raw, $m) === 1) {
+        if (preg_match('/Adjusted income from operations of \$(?<value>\d[\d.]*)\s*billion, representing a\s*(?<margin>\d[\d.]*)%\s*margin/iu', $raw, $m) === 1) {
             return [
                 'actual' => (float) $m['margin'],
                 'value_musd' => (float) $m['value'] * 1000,
@@ -382,7 +403,7 @@ final class GetEarningsAnalysisUseCase
         // Direct disclosure fallback: some statements print the margin percentage itself right next
         // to the label, e.g. "Operating loss margin(7)%(3)%" (current, prior). Prefer this over
         // deriving it ourselves whenever it's available.
-        if (preg_match('/Operating (?:income|loss) margin\s*(?<full>\(?[\d.]+\)?)\s*%/iu', $raw, $m) === 1) {
+        if (preg_match('/Operating (?:income|loss) margin\s*(?<full>\(?\d[\d.]*\)?)\s*%/iu', $raw, $m) === 1) {
             return [
                 'actual' => $this->parseSecNumber($m['full']),
                 'value_musd' => null,
@@ -410,7 +431,7 @@ final class GetEarningsAnalysisUseCase
         // unit, so no threshold guard is needed here (unlike the dot-leader case above, this format
         // is used by companies that already report meaningful revenue).
         $operatingResult = $this->extractSecondTableValue($raw, 'Loss from operations|Income from operations');
-        $revenueHighlight = $this->extractHighlightRow($raw, 'Revenues?');
+        $revenueHighlight = $this->extractHighlightRow($raw, self::REVENUE_LABEL_PATTERN);
         if ($operatingResult !== null && $revenueHighlight !== null && $revenueHighlight['current'] > 0) {
             $scale = $this->detectTableScale($raw);
             return [
@@ -429,7 +450,7 @@ final class GetEarningsAnalysisUseCase
      */
     private function extractRawTabularRevenue(string $raw): ?float
     {
-        if (preg_match('/Revenues?\s+\$(?<value>[\d,]+|—)/iu', $raw, $m) !== 1) {
+        if (preg_match('/' . self::REVENUE_LABEL_PATTERN . '\s+\$(?<value>\d[\d,]*|—)/iu', $raw, $m) !== 1) {
             return null;
         }
 
@@ -438,7 +459,7 @@ final class GetEarningsAnalysisUseCase
 
     private function extractAdjustedFreeCashFlow(string $raw): array
     {
-        if (preg_match('/Adjusted Free Cash Flow\$?(?<value>[\d,]+)\s*(?<margin>[\d.]+)\s*%/iu', $raw, $m) === 1) {
+        if (preg_match('/Adjusted Free Cash Flow\$?(?<value>\d[\d,]*)\s*(?<margin>\d[\d.]*)\s*%/iu', $raw, $m) === 1) {
             return [
                 'actual' => $this->thousandsToMillions($m['value']),
                 'margin_pct' => (float) $m['margin'],
@@ -446,7 +467,7 @@ final class GetEarningsAnalysisUseCase
             ];
         }
 
-        if (preg_match('/Adjusted free cash flow of \$(?<value>[\d.]+)\s*billion, representing a\s*(?<margin>[\d.]+)%\s*margin/iu', $raw, $m) === 1) {
+        if (preg_match('/Adjusted free cash flow of \$(?<value>\d[\d.]*)\s*billion, representing a\s*(?<margin>\d[\d.]*)%\s*margin/iu', $raw, $m) === 1) {
             return [
                 'actual' => (float) $m['value'] * 1000,
                 'margin_pct' => (float) $m['margin'],
@@ -479,7 +500,7 @@ final class GetEarningsAnalysisUseCase
 
     private function extractFullYearGuidanceRevenue(string $raw): ?float
     {
-        if (preg_match('/raising our revenue guidance to between \$(?<low>[\d.]+)\s*[–-]\s*\$(?<high>[\d.]+)\s*billion/iu', $raw, $m) === 1) {
+        if (preg_match('/raising our revenue guidance to between \$(?<low>\d[\d.]*)\s*[–-]\s*\$(?<high>\d[\d.]*)\s*billion/iu', $raw, $m) === 1) {
             return (((float) $m['low']) + ((float) $m['high'])) / 2 * 1000;
         }
 
@@ -488,7 +509,7 @@ final class GetEarningsAnalysisUseCase
 
     private function extractFullYearGuidanceYoy(string $raw): ?float
     {
-        if (preg_match('/Raises FY 2026 Revenue Guidance to\s*(?<yoy>[\d.]+)%\s*Y\/Y Growth/iu', $raw, $m) === 1) {
+        if (preg_match('/Raises FY 2026 Revenue Guidance to\s*(?<yoy>\d[\d.]*)%\s*Y\/Y Growth/iu', $raw, $m) === 1) {
             return (float) $m['yoy'];
         }
 
@@ -497,13 +518,13 @@ final class GetEarningsAnalysisUseCase
 
     private function extractCashPosition(string $raw): ?float
     {
-        if (preg_match('/Cash, cash equivalents, and short-term U\.S\. Treasury securities of \$(?<value>[\d.]+)\s*billion/iu', $raw, $m) === 1) {
+        if (preg_match('/Cash, cash equivalents, and short-term U\.S\. Treasury securities of \$(?<value>\d[\d.]*)\s*billion/iu', $raw, $m) === 1) {
             return (float) $m['value'] * 1000;
         }
 
         // Tabular fallback: balance sheet "Cash and cash equivalents $X" line (also matches with no
         // gap at all, e.g. "Cash and cash equivalents$2,244").
-        if (preg_match('/Cash and cash equivalents\s*\$(?<value>[\d,]+)/iu', $raw, $m) === 1) {
+        if (preg_match('/Cash and cash equivalents\s*\$(?<value>\d[\d,]*)/iu', $raw, $m) === 1) {
             return $this->parseSecNumber($m['value']) * $this->detectTableScale($raw);
         }
 

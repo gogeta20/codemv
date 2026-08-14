@@ -53,6 +53,18 @@ class GetEarningsAnalysisUseCaseTest extends TestCase
     Balance Sheet (unaudited)March 31,2026December 31,2025AssetsCurrent assetsCash and cash equivalents$2,244 $3,127
     TEXT;
 
+    // Mirrors the real Cellebrite (CLBT) 6-K earnings exhibit: two traps found by manual review.
+    // (1) "Cost of revenue" and "non-GAAP operating income, non-GAAP net income," both contain the
+    // words "revenue"/"net income" as a substring — a naive label match reads the wrong line.
+    // (2) A bare comma right after a label (as in the same "non-GAAP ... ," boilerplate) can satisfy
+    // a `[\d,]+` character class with zero actual digits, silently extracting 0 instead of failing.
+    private const TRAP_RAW = <<<'TEXT'
+    Cellebrite Reports Second-Quarter 2026 Results. Revenue of $131.1 million, up 16% year-over-year.
+    Cellebrite believes that the use of non-GAAP cost of revenue, non-GAAP operating expenses, non-GAAP operating income, non-GAAP net income, non-GAAP EPS and adjusted EBITDA is helpful to investors.
+    Three months ended June 30, 2026 2025 Total revenue 131,138 113,276 Cost of revenue: Subscription services 15,981 8,522 Total cost of revenue 25,207 17,677
+    Gross profit margin 80.8% 84.4% Operating income 6,949 14,417 Operating margin 5.3% 12.7% Net income 6,371 19,476 Cash flow from operating activities 17,589 32,583
+    TEXT;
+
     private AccionRepositoryInterface $accionRepository;
     private AccionEarningsReportRepositoryInterface $earningsReportRepository;
     private AccionEarningsRepositoryInterface $accionEarningsRepository;
@@ -258,6 +270,36 @@ class GetEarningsAnalysisUseCaseTest extends TestCase
         $result = $this->useCase->execute($accion->getUuid());
 
         $this->assertFalse($result['report']['is_stale']);
+    }
+
+    public function testDoesNotMistakeCostOfRevenueOrBoilerplateCommasForRealFigures(): void
+    {
+        $accion = new Accion('88888888-8888-8888-8888-888888888888', 'CLBT', 'Cellebrite DI Ltd.', 'stock');
+        $report = $this->buildReport($accion, self::TRAP_RAW);
+
+        $this->accionRepository->method('findByUuid')->willReturn($accion);
+        $this->earningsReportRepository->method('findLatestByAccion')->willReturn($report);
+        $this->accionEarningsRepository->method('findByAccion')->willReturn(null);
+
+        $result = $this->useCase->execute($accion->getUuid());
+
+        $revenueKpi = $this->kpiByKey($result['kpis'], 'revenue');
+        $netIncomeKpi = $this->kpiByKey($result['kpis'], 'net_income');
+        $opexKpi = $this->kpiByKey($result['kpis'], 'operating_expenses');
+
+        // Must read the "Revenue of $131.1 million" prose bullet, not "Total cost of revenue
+        // 25,207" (a real line in the same document that also contains the word "revenue").
+        $this->assertEqualsWithDelta(131.1, $revenueKpi['actual'], 0.01);
+        $this->assertEqualsWithDelta(16.0, $revenueKpi['yoy_pct'], 0.01);
+
+        // Must read the tabular "Net income 6,371" line, not silently extract 0 from the bare
+        // comma in "non-GAAP operating income, non-GAAP net income," boilerplate.
+        $this->assertEqualsWithDelta(6.371, $netIncomeKpi['actual'], 0.001);
+        $this->assertNotEquals(0.0, $netIncomeKpi['actual']);
+
+        // Operating expenses derived from the real revenue (131.1) minus real operating income
+        // (6.949), not from a comma-corrupted zero.
+        $this->assertEqualsWithDelta(124.151, $opexKpi['actual'], 0.01);
     }
 
     private function kpiByKey(array $kpis, string $key): array
