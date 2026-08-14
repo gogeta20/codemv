@@ -108,13 +108,23 @@ final class GetEarningsAnalysisUseCase
 
     /**
      * Financial-statement tables in SEC filings are almost always reported "in thousands"; a few
-     * report "in millions". We look for that disclaimer near the table headers to scale amounts to
-     * MUSD correctly instead of guessing.
+     * report "in millions" — and some documents mix both within the same release (e.g. a rounded
+     * highlights table in millions, followed by exact GAAP statements in thousands further down).
+     * Scanning the whole document for a single scale would misapply an earlier disclaimer to a
+     * value from a differently-scaled table, so we look at the nearest declaration *before* the
+     * position of the value actually being converted, not just anywhere in the document.
      */
-    private function detectTableScale(string $raw): float
+    private function detectTableScale(string $raw, int $beforeOffset = PHP_INT_MAX): float
     {
-        if (preg_match('/in\s+millions/iu', $raw) === 1) {
-            return 1.0;
+        $window = $beforeOffset === PHP_INT_MAX ? $raw : substr($raw, 0, $beforeOffset);
+
+        // Not anchored to a literal "in millions"/"in thousands": real headers phrase this many
+        // ways ("In USD $ millions", "(Dollars in thousands)", "in millions of U.S. dollars"), so we
+        // just look for the bare unit word — the *nearest one before the value* (not a fixed-size
+        // window) correctly follows a document from one table's declared unit into the next when
+        // they differ, without needing to guess how far apart two sections might be.
+        if (preg_match_all('/\b(millions|thousands)\b/iu', $window, $matches) > 0) {
+            return strtolower(end($matches[1])) === 'millions' ? 1.0 : 1 / 1000;
         }
 
         return 1 / 1000;
@@ -123,51 +133,59 @@ final class GetEarningsAnalysisUseCase
     /**
      * Matches "<label> <amount>" where amount may carry a leading "$" and/or be wrapped in
      * parentheses to denote a negative (e.g. "Operating loss (20,052)"). Returns the raw amount in
-     * whatever unit the table uses (caller decides on scaling).
+     * whatever unit the table uses, plus the match offset so the caller can look up the *nearby*
+     * scale declaration via detectTableScale() instead of a possibly-wrong document-wide one.
+     *
+     * @return array{value: float, offset: int}|null
      */
-    private function extractLabeledAmount(string $raw, string $labelPattern): ?float
+    private function extractLabeledAmount(string $raw, string $labelPattern): ?array
     {
         // Wrap the caller's label in a non-capturing group: several callers pass top-level
         // alternation (e.g. "Foo|Bar"), and without the wrapper the trailing amount pattern would
         // only apply to the last alternative, leaving the (?<full>...) group uncaptured for the
         // others.
-        if (preg_match('/(?:' . $labelPattern . ')\s*\$?(?<full>\(?\d[\d,]*\)?)/iu', $raw, $m) !== 1 || !isset($m['full'])) {
+        if (preg_match('/(?:' . $labelPattern . ')\s*\$?(?<full>\(?\d[\d,]*\)?)/iu', $raw, $m, PREG_OFFSET_CAPTURE) !== 1 || !isset($m['full'])) {
             return null;
         }
 
-        return $this->parseSecNumber($m['full']);
+        return ['value' => $this->parseSecNumber($m['full'][0]), 'offset' => $m[0][1]];
     }
 
     /**
      * Matches a "Label <prior> <current> <change>%" row from a highlights table without dollar
-     * signs or dot-leaders, e.g. "Revenues 105.1 582.3 454%". Returns the current-period value and
-     * the stated YoY change, or null if the row isn't in this shape.
+     * signs or dot-leaders, e.g. "Revenues 105.1 582.3 454%". Returns the current-period value, the
+     * stated YoY change, and the match offset (for scale lookup) — or null if the row isn't in this
+     * shape.
      */
     private function extractHighlightRow(string $raw, string $labelPattern): ?array
     {
-        if (preg_match('/(?:' . $labelPattern . ')\s+(?<prior>-?\(?\d[\d,.]*\)?|—)\s+(?<current>-?\(?\d[\d,.]*\)?|—)\s+(?<yoy>-?\d[\d,.]*)%/iu', $raw, $m) !== 1) {
+        if (preg_match('/(?:' . $labelPattern . ')\s+(?<prior>-?\(?\d[\d,.]*\)?|—)\s+(?<current>-?\(?\d[\d,.]*\)?|—)\s+(?<yoy>-?\d[\d,.]*)%/iu', $raw, $m, PREG_OFFSET_CAPTURE) !== 1) {
             return null;
         }
 
         return [
-            'current' => $this->parseSecNumber($m['current']),
-            'yoy_pct' => (float) str_replace(',', '', $m['yoy']),
+            'current' => $this->parseSecNumber($m['current'][0]),
+            'yoy_pct' => (float) str_replace(',', '', $m['yoy'][0]),
+            'offset' => $m[0][1],
         ];
     }
 
     /**
      * Matches a "Label <prior> <current> ..." row from a statement table (no dollar sign or
-     * dot-leaders) and returns the current-period column, e.g. "Loss from operations (111.2)
-     * (175.9)" -> -175.9. Only the first two numbers are used even when the row has more columns
-     * (e.g. a trailing six-month comparison), since those always come after prior/current quarter.
+     * dot-leaders) and returns the current-period column plus the match offset (for scale lookup),
+     * e.g. "Loss from operations (111.2) (175.9)" -> -175.9. Only the first two numbers are used
+     * even when the row has more columns (e.g. a trailing six-month comparison), since those always
+     * come after prior/current quarter.
+     *
+     * @return array{value: float, offset: int}|null
      */
-    private function extractSecondTableValue(string $raw, string $labelPattern): ?float
+    private function extractSecondTableValue(string $raw, string $labelPattern): ?array
     {
-        if (preg_match('/(?:' . $labelPattern . ')\s+(?<prior>-?\(?\d[\d,.]*\)?|—)\s+(?<current>-?\(?\d[\d,.]*\)?|—)/iu', $raw, $m) !== 1) {
+        if (preg_match('/(?:' . $labelPattern . ')\s+(?<prior>-?\(?\d[\d,.]*\)?|—)\s+(?<current>-?\(?\d[\d,.]*\)?|—)/iu', $raw, $m, PREG_OFFSET_CAPTURE) !== 1) {
             return null;
         }
 
-        return $this->parseSecNumber($m['current']);
+        return ['value' => $this->parseSecNumber($m['current'][0]), 'offset' => $m[0][1]];
     }
 
     private function extractMetrics(string $raw): array
@@ -195,9 +213,9 @@ final class GetEarningsAnalysisUseCase
      */
     private function extractNetIncomeTotal(string $raw): array
     {
-        if (preg_match('/(?<!Adjusted )Net (?:income|loss)\s*\$?(?<full>\(?\d[\d,.]*\)?)/iu', $raw, $m) === 1) {
+        if (preg_match('/(?<!Adjusted )Net (?:income|loss)\s*\$?(?<full>\(?\d[\d,.]*\)?)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
             return [
-                'actual' => $this->parseSecNumber($m['full']) * $this->detectTableScale($raw),
+                'actual' => $this->parseSecNumber($m['full'][0]) * $this->detectTableScale($raw, $m[0][1]),
                 'yoy_pct' => null,
             ];
         }
@@ -212,9 +230,9 @@ final class GetEarningsAnalysisUseCase
      */
     private function extractInterestExpense(string $raw): array
     {
-        if (preg_match('/Interest expense,?\s*net\s*\$?(?<full>\(?\d[\d,.]*\)?)/iu', $raw, $m) === 1) {
+        if (preg_match('/Interest expense,?\s*net\s*\$?(?<full>\(?\d[\d,.]*\)?)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
             return [
-                'actual' => abs($this->parseSecNumber($m['full'])) * $this->detectTableScale($raw),
+                'actual' => abs($this->parseSecNumber($m['full'][0])) * $this->detectTableScale($raw, $m[0][1]),
                 'yoy_pct' => null,
             ];
         }
@@ -229,9 +247,9 @@ final class GetEarningsAnalysisUseCase
      */
     private function extractTaxes(string $raw): array
     {
-        if (preg_match('/Provision for income taxes\s*\$?(?<full>\(?\d[\d,.]*\)?)/iu', $raw, $m) === 1) {
+        if (preg_match('/Provision for income taxes\s*\$?(?<full>\(?\d[\d,.]*\)?)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
             return [
-                'actual' => abs($this->parseSecNumber($m['full'])) * $this->detectTableScale($raw),
+                'actual' => abs($this->parseSecNumber($m['full'][0])) * $this->detectTableScale($raw, $m[0][1]),
                 'yoy_pct' => null,
             ];
         }
@@ -252,13 +270,13 @@ final class GetEarningsAnalysisUseCase
             return ['actual' => null, 'yoy_pct' => null];
         }
 
-        $operatingIncomeRaw = $this->extractLabeledAmount($raw, 'Operating (?:income|loss)')
+        $operatingIncomeMatch = $this->extractLabeledAmount($raw, 'Operating (?:income|loss)')
             ?? $this->extractSecondTableValue($raw, 'Loss from operations|Income from operations');
-        if ($operatingIncomeRaw === null) {
+        if ($operatingIncomeMatch === null) {
             return ['actual' => null, 'yoy_pct' => null];
         }
 
-        $operatingIncome = $operatingIncomeRaw * $this->detectTableScale($raw);
+        $operatingIncome = $operatingIncomeMatch['value'] * $this->detectTableScale($raw, $operatingIncomeMatch['offset']);
 
         return [
             'actual' => round($revenueActual - $operatingIncome, 2),
@@ -299,19 +317,19 @@ final class GetEarningsAnalysisUseCase
         // figure, e.g. "Revenue$2,078 $982" (current quarter, prior-year quarter side by side —
         // common in GAAP income-statement tables that don't spell out a YoY %). Derives yoy_pct
         // ourselves from the two figures instead of leaving it null.
-        if (preg_match('/' . self::REVENUE_LABEL_PATTERN . '\s*\$(?<current>\d[\d,]*|—)\s*\$(?<prior>\d[\d,]*|—)/iu', $raw, $m) === 1) {
-            $current = $this->parseSecNumber($m['current']);
-            $prior = $this->parseSecNumber($m['prior']);
+        if (preg_match('/' . self::REVENUE_LABEL_PATTERN . '\s*\$(?<current>\d[\d,]*|—)\s*\$(?<prior>\d[\d,]*|—)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
+            $current = $this->parseSecNumber($m['current'][0]);
+            $prior = $this->parseSecNumber($m['prior'][0]);
             return [
-                'actual' => $current * $this->detectTableScale($raw),
+                'actual' => $current * $this->detectTableScale($raw, $m[0][1]),
                 'yoy_pct' => $prior > 0 ? round((($current - $prior) / $prior) * 100, 2) : null,
             ];
         }
 
         // Tabular financial-statement fallback: "Revenues .... $61" (dot-leaders already collapsed).
-        if (preg_match('/' . self::REVENUE_LABEL_PATTERN . '\s*\$(?<value>\d[\d,]*|—)/iu', $raw, $m) === 1) {
+        if (preg_match('/' . self::REVENUE_LABEL_PATTERN . '\s*\$(?<value>\d[\d,]*|—)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
             return [
-                'actual' => $this->parseSecNumber($m['value']) * $this->detectTableScale($raw),
+                'actual' => $this->parseSecNumber($m['value'][0]) * $this->detectTableScale($raw, $m[0][1]),
                 'yoy_pct' => null,
             ];
         }
@@ -321,7 +339,7 @@ final class GetEarningsAnalysisUseCase
         $highlight = $this->extractHighlightRow($raw, self::REVENUE_LABEL_PATTERN);
         if ($highlight !== null) {
             return [
-                'actual' => $highlight['current'] * $this->detectTableScale($raw),
+                'actual' => $highlight['current'] * $this->detectTableScale($raw, $highlight['offset']),
                 'yoy_pct' => $highlight['yoy_pct'],
             ];
         }
@@ -415,13 +433,13 @@ final class GetEarningsAnalysisUseCase
         // revenue is too small relative to the table's unit to produce a meaningful percentage
         // (e.g. a pre-revenue company with a few thousand dollars of revenue and a multi-million
         // loss would otherwise show a nonsensical -30000% "margin").
-        $operatingIncome = $this->extractLabeledAmount($raw, 'Operating (?:income|loss)');
+        $operatingIncomeMatch = $this->extractLabeledAmount($raw, 'Operating (?:income|loss)');
         $revenueRaw = $this->extractRawTabularRevenue($raw);
-        if ($operatingIncome !== null && $revenueRaw !== null && $revenueRaw >= 1000) {
-            $scale = $this->detectTableScale($raw);
+        if ($operatingIncomeMatch !== null && $revenueRaw !== null && $revenueRaw >= 1000) {
+            $scale = $this->detectTableScale($raw, $operatingIncomeMatch['offset']);
             return [
-                'actual' => round(($operatingIncome / $revenueRaw) * 100, 2),
-                'value_musd' => $operatingIncome * $scale,
+                'actual' => round(($operatingIncomeMatch['value'] / $revenueRaw) * 100, 2),
+                'value_musd' => $operatingIncomeMatch['value'] * $scale,
                 'yoy_pct' => null,
             ];
         }
@@ -430,13 +448,13 @@ final class GetEarningsAnalysisUseCase
         // alongside "Revenues 105.1 582.3 454%"). Both values are already in the table's stated
         // unit, so no threshold guard is needed here (unlike the dot-leader case above, this format
         // is used by companies that already report meaningful revenue).
-        $operatingResult = $this->extractSecondTableValue($raw, 'Loss from operations|Income from operations');
+        $operatingResultMatch = $this->extractSecondTableValue($raw, 'Loss from operations|Income from operations');
         $revenueHighlight = $this->extractHighlightRow($raw, self::REVENUE_LABEL_PATTERN);
-        if ($operatingResult !== null && $revenueHighlight !== null && $revenueHighlight['current'] > 0) {
-            $scale = $this->detectTableScale($raw);
+        if ($operatingResultMatch !== null && $revenueHighlight !== null && $revenueHighlight['current'] > 0) {
+            $scale = $this->detectTableScale($raw, $operatingResultMatch['offset']);
             return [
-                'actual' => round(($operatingResult / $revenueHighlight['current']) * 100, 2),
-                'value_musd' => $operatingResult * $scale,
+                'actual' => round(($operatingResultMatch['value'] / $revenueHighlight['current']) * 100, 2),
+                'value_musd' => $operatingResultMatch['value'] * $scale,
                 'yoy_pct' => null,
             ];
         }
@@ -483,11 +501,11 @@ final class GetEarningsAnalysisUseCase
         // (e.g. "Purchase of property and equipment, including capitalized internal-use
         // software(7,695)"), so the label pattern tolerates a short non-numeric gap before the
         // amount instead of requiring it immediately after.
-        $operatingCashFlow = $this->extractLabeledAmount($raw, 'Net cash (?:provided by|used in) operating activities');
-        $capex = $this->extractLabeledAmount($raw, '(?:Purchases? of property(?:,? plant(?:,? and|,) equipment)?|Capital expenditures)[^0-9($]{0,80}');
-        if ($operatingCashFlow !== null && $capex !== null) {
-            $scale = $this->detectTableScale($raw);
-            $fcfRaw = $operatingCashFlow - abs($capex);
+        $operatingCashFlowMatch = $this->extractLabeledAmount($raw, 'Net cash (?:provided by|used in) operating activities');
+        $capexMatch = $this->extractLabeledAmount($raw, '(?:Purchases? of property(?:,? plant(?:,? and|,) equipment)?|Capital expenditures)[^0-9($]{0,80}');
+        if ($operatingCashFlowMatch !== null && $capexMatch !== null) {
+            $scale = $this->detectTableScale($raw, $operatingCashFlowMatch['offset']);
+            $fcfRaw = $operatingCashFlowMatch['value'] - abs($capexMatch['value']);
             return [
                 'actual' => $fcfRaw * $scale,
                 'margin_pct' => null,
@@ -524,15 +542,15 @@ final class GetEarningsAnalysisUseCase
 
         // Tabular fallback: balance sheet "Cash and cash equivalents $X" line (also matches with no
         // gap at all, e.g. "Cash and cash equivalents$2,244").
-        if (preg_match('/Cash and cash equivalents\s*\$(?<value>\d[\d,]*)/iu', $raw, $m) === 1) {
-            return $this->parseSecNumber($m['value']) * $this->detectTableScale($raw);
+        if (preg_match('/Cash and cash equivalents\s*\$(?<value>\d[\d,]*)/iu', $raw, $m, PREG_OFFSET_CAPTURE) === 1) {
+            return $this->parseSecNumber($m['value'][0]) * $this->detectTableScale($raw, $m[0][1]);
         }
 
         // Balance-sheet fallback without "$" (e.g. "Cash and cash equivalents 3,678.1 8,042.1" for
         // prior year-end vs. current period end).
-        $balanceSheetCash = $this->extractSecondTableValue($raw, 'Cash and cash equivalents');
-        if ($balanceSheetCash !== null) {
-            return $balanceSheetCash * $this->detectTableScale($raw);
+        $balanceSheetCashMatch = $this->extractSecondTableValue($raw, 'Cash and cash equivalents');
+        if ($balanceSheetCashMatch !== null) {
+            return $balanceSheetCashMatch['value'] * $this->detectTableScale($raw, $balanceSheetCashMatch['offset']);
         }
 
         return null;

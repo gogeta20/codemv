@@ -88,6 +88,12 @@ final class FetchEarningsReportsCommand extends Command
                 $io->warning(sprintf('  ! %s -> %s', $currentSymbol, $e->getMessage()));
                 $errors++;
             }
+
+            // SEC rate-limits by IP; each symbol here can trigger several requests (submissions,
+            // exhibit index, exhibit content, and now a content-validation preview per candidate
+            // filing). A small pause between symbols keeps a full run of dozens of accions well
+            // under that limit instead of getting HTTP 429s partway through.
+            usleep(200_000);
         }
 
         if ($errors > 0) {

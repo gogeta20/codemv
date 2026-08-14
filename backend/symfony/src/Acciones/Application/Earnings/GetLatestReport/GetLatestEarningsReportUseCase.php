@@ -17,6 +17,14 @@ final class GetLatestEarningsReportUseCase
     private const EARNINGS_FORMS = ['8-K', '8-K/A', '6-K', '6-K/A'];
     private const PERIODIC_FORMS = ['10-Q', '10-K', '20-F', '40-F', '6-K', '6-K/A'];
 
+    /**
+     * @var array<int, array{ticker: string, cik_str: int, title: string}>|null
+     * In-memory cache for the lifetime of this instance (a single command run typically dispatches
+     * this use case for dozens of symbols in one PHP process, via the same shared service instance —
+     * refetching this ~large, identical file per symbol was needlessly hammering SEC's rate limit).
+     */
+    private ?array $companyTickersCache = null;
+
     public function __construct(
         private readonly HttpClientInterface $httpClient,
     ) {}
@@ -80,8 +88,9 @@ final class GetLatestEarningsReportUseCase
 
     private function findCompanyByTicker(string $symbol): array
     {
-        $companies = $this->fetchJson(self::SEC_BASE_URL . '/files/company_tickers.json');
-        foreach ($companies as $company) {
+        $this->companyTickersCache ??= $this->fetchJson(self::SEC_BASE_URL . '/files/company_tickers.json');
+
+        foreach ($this->companyTickersCache as $company) {
             if (($company['ticker'] ?? null) === $symbol) {
                 return $company;
             }

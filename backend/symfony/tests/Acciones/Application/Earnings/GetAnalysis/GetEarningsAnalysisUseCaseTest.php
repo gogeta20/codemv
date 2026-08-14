@@ -65,6 +65,18 @@ class GetEarningsAnalysisUseCaseTest extends TestCase
     Gross profit margin 80.8% 84.4% Operating income 6,949 14,417 Operating margin 5.3% 12.7% Net income 6,371 19,476 Cash flow from operating activities 17,589 32,583
     TEXT;
 
+    // Mirrors the real X-Energy (XE) 8-K earnings exhibit: a rounded highlights table declared "in
+    // millions" near the top, followed by the exact GAAP statements declared "(in thousands...)"
+    // further down — the same document uses two different scales for two different tables.
+    private const MIXED_SCALE_RAW = <<<'TEXT'
+    X-energy Reports Second Quarter 2026 Results
+    Financial Results (Dollars in millions) Three Months Ended June 30, 2026 2025 % Change Total revenues and grant income 54.6 21.5 154%
+    X-ENERGY, INC. CONDENSED CONSOLIDATED STATEMENTS OF OPERATIONS (in thousands, except share and per share amounts) (unaudited) Three Months Ended June 30, 2026 2025
+    Net loss (105,333 ) (88,848 )
+    X-ENERGY, INC. CONDENSED CONSOLIDATED STATEMENTS OF CASH FLOWS (in thousands) (unaudited) Six Months Ended June 30, 2026 2025
+    Net cash used in operating activities (97,300 ) (20,000 )
+    TEXT;
+
     private AccionRepositoryInterface $accionRepository;
     private AccionEarningsReportRepositoryInterface $earningsReportRepository;
     private AccionEarningsRepositoryInterface $accionEarningsRepository;
@@ -300,6 +312,26 @@ class GetEarningsAnalysisUseCaseTest extends TestCase
         // Operating expenses derived from the real revenue (131.1) minus real operating income
         // (6.949), not from a comma-corrupted zero.
         $this->assertEqualsWithDelta(124.151, $opexKpi['actual'], 0.01);
+    }
+
+    public function testUsesTheNearestScaleDeclarationInsteadOfADocumentWideOne(): void
+    {
+        $accion = new Accion('77777777-7777-7777-7777-777777777777', 'XE', 'X-Energy, Inc.', 'stock');
+        $report = $this->buildReport($accion, self::MIXED_SCALE_RAW);
+
+        $this->accionRepository->method('findByUuid')->willReturn($accion);
+        $this->earningsReportRepository->method('findLatestByAccion')->willReturn($report);
+        $this->accionEarningsRepository->method('findByAccion')->willReturn(null);
+
+        $result = $this->useCase->execute($accion->getUuid());
+
+        $netIncomeKpi = $this->kpiByKey($result['kpis'], 'net_income');
+
+        // The "(Dollars in millions)" declaration near the top of the document belongs to the
+        // highlights table, not to the GAAP statements further down that declare "(in thousands...)"
+        // right before their own figures. A document-wide scale scan would treat -105,333 (thousands)
+        // as if it were already in millions and report a net loss of -$105 BILLION.
+        $this->assertEqualsWithDelta(-105.333, $netIncomeKpi['actual'], 0.001);
     }
 
     private function kpiByKey(array $kpis, string $key): array
