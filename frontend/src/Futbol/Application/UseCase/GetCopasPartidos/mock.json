@@ -1,0 +1,45 @@
+[
+  {
+    "event_id": "401862911",
+    "competition": { "code": "uefa.europa", "label": "UEFA Europa League" },
+    "name": "Aston Villa at SC Freiburg",
+    "short_name": "AVL @ SCF",
+    "date": "2026-08-14T19:00:00Z",
+    "status": { "state": "pre", "completed": false, "description": "Scheduled", "detail": "14/08 - 21:00", "short_detail": "21:00" },
+    "venue": { "name": "Vodafone Park", "city": "Istanbul", "country": "Türkiye" },
+    "local": {
+      "team_id": "126",
+      "name": "SC Freiburg",
+      "short_name": "Freiburg",
+      "abbreviation": "SCF",
+      "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/126.png",
+      "form": "LWLWD",
+      "home_away": "home",
+      "winner": null,
+      "score": null,
+      "shootout_score": null,
+      "domestic": { "country": "Germany", "league_code": "ger.1", "league_label": "Bundesliga", "strength_rank": 4, "strength_score": 92, "strength_label": "élite" }
+    },
+    "visitante": {
+      "team_id": "362",
+      "name": "Aston Villa",
+      "short_name": "Aston Villa",
+      "abbreviation": "AVL",
+      "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/362.png",
+      "form": "LWWWD",
+      "home_away": "away",
+      "winner": null,
+      "score": null,
+      "shootout_score": null,
+      "domestic": { "country": "England", "league_code": "eng.1", "league_label": "Premier League", "strength_rank": 1, "strength_score": 100, "strength_label": "élite" }
+    },
+    "strength": {
+      "local": { "country": "Germany", "rank": 4, "score": 92, "label": "élite" },
+      "visitante": { "country": "England", "rank": 1, "score": 100, "label": "élite" },
+      "diff": -8,
+      "favorite_side": "visitante",
+      "confidence": "media",
+      "summary": "England parte por encima de Germany por fuerza estructural de liga."
+    }
+  }
+]

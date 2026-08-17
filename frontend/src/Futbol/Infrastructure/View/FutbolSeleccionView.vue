@@ -74,6 +74,13 @@
           <span class="dashboard-card__text">Comparar ligas más goleadoras y más cerradas.</span>
         </RouterLink>
 
+        <RouterLink to="/futbol/copas" class="dashboard-card">
+          <span class="dashboard-card__icon">🛡️</span>
+          <span class="dashboard-card__eyebrow">UEFA</span>
+          <strong class="dashboard-card__title">Copas europeas</strong>
+          <span class="dashboard-card__text">Filtrar Champions, Europa League y Conference por fuerza estructural de liga.</span>
+        </RouterLink>
+
         <RouterLink to="/futbol/mundial" class="dashboard-card">
           <span class="dashboard-card__icon">🏆</span>
           <span class="dashboard-card__eyebrow">Especial</span>

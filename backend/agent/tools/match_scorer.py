@@ -55,6 +55,101 @@ def _empates_recientes_h2h(h2h_detalle: list, max_years: int = 3) -> int:
     )
 
 
+def _pick_favorite_side(partido: dict) -> str | None:
+    prob_l = partido.get("prob_local")
+    prob_v = partido.get("prob_visitante")
+    if prob_l is not None and prob_v is not None and prob_l != prob_v:
+        return "local" if prob_l > prob_v else "visitante"
+
+    odds_l = partido.get("odds_local")
+    odds_v = partido.get("odds_visitante")
+    if odds_l is not None and odds_v is not None and odds_l != odds_v:
+        return "local" if odds_l < odds_v else "visitante"
+
+    pos_l = partido.get("pos_local")
+    pos_v = partido.get("pos_visitante")
+    if pos_l is not None and pos_v is not None and pos_l != pos_v:
+        return "local" if pos_l < pos_v else "visitante"
+
+    return None
+
+
+def _squad_context_penalty(partido: dict) -> dict | None:
+    favorito = _pick_favorite_side(partido)
+    if favorito is None:
+        return None
+
+    ctx = partido.get(f"squad_context_{favorito}") or {}
+    if not ctx:
+        return None
+
+    points = int(ctx.get("points") or 0)
+    if points == 0:
+        return None
+
+    return {
+        "favorito": favorito,
+        "team": ctx.get("team"),
+        "kind": ctx.get("kind"),
+        "source": ctx.get("source"),
+        "active_until": ctx.get("active_until"),
+        "puntos": points,
+        "razones": [ctx.get("reason")],
+    }
+
+
+def _fatigue_penalty(partido: dict) -> dict | None:
+    favorito = _pick_favorite_side(partido)
+    if favorito is None:
+        return None
+
+    rival = "visitante" if favorito == "local" else "local"
+    ctx_fav = partido.get(f"fixture_context_{favorito}") or {}
+    ctx_riv = partido.get(f"fixture_context_{rival}") or {}
+
+    points = 0
+    reasons = []
+
+    prev_fav = ctx_fav.get("prev") or {}
+    next_fav = ctx_fav.get("next") or {}
+    days_prev_fav = ctx_fav.get("days_since_prev")
+    days_next_fav = ctx_fav.get("days_until_next")
+    days_prev_riv = ctx_riv.get("days_since_prev")
+
+    if days_prev_fav is not None and days_prev_fav <= 3.0:
+        points -= 1
+        reasons.append(f"favorito con solo {days_prev_fav} días desde su último partido")
+
+    if prev_fav.get("es_europeo") and days_prev_fav is not None and days_prev_fav <= 4.0:
+        points -= 1
+        reasons.append(
+            f"venía de {prev_fav.get('competition') or 'competición europea'} hace {days_prev_fav} días"
+        )
+
+    if next_fav.get("es_europeo") and days_next_fav is not None and days_next_fav <= 4.0:
+        points -= 1
+        reasons.append(
+            f"tenía {next_fav.get('competition') or 'Europa'} en {days_next_fav} días, posible rotación"
+        )
+
+    if days_prev_fav is not None and days_prev_riv is not None and days_prev_fav + 2 <= days_prev_riv:
+        points -= 1
+        reasons.append(
+            f"descanso desigual: favorito {days_prev_fav} días vs rival {days_prev_riv}"
+        )
+
+    if not reasons:
+        return None
+
+    return {
+        "favorito": favorito,
+        "puntos": max(points, -3),
+        "razones": reasons,
+        "prev_favorito": prev_fav or None,
+        "next_favorito": next_fav or None,
+    }
+
+
 def score_match(partido: dict, total_equipos: int = 20, ignorar_temporada: bool = False) -> tuple[int, dict]:
     """
     Recibe el dict enriquecido de un partido (con standings, odds, h2h).
@@ -251,6 +346,18 @@ def score_match(partido: dict, total_equipos: int = 20, ignorar_temporada: bool 
             score += 1
             detalle["zonas"]["puntos"] = 1
             detalle["zonas"]["desc"] = "Ambos con motivación alta"
+
+    # --- Contexto de plantilla / salidas recientes ---
+    plantilla = _squad_context_penalty(partido)
+    if plantilla:
+        score += plantilla["puntos"]
+        detalle["contexto_plantilla"] = plantilla
+
+    # --- Carga de calendario / Europa ---
+    fatiga = _fatigue_penalty(partido)
+    if fatiga:
+        score += fatiga["puntos"]
+        detalle["fatiga_calendario"] = fatiga
 
     # --- Trampa de empate ---
     # Dos señales independientes que se combinan:

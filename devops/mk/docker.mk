@@ -1,5 +1,6 @@
 DOCKER      = docker
 DOCKER_COMP = docker compose
+AGENT_PYTHON = PYTHONPATH=../../.python-agent python3
 
 ## Build Docker images
 build:
@@ -48,21 +49,21 @@ optimize:
 
 ## Start agent lookup server (port 5001)
 agent-lookup:
-	@cd backend/agent && python3 lookup_server.py &
+	@cd backend/agent && $(AGENT_PYTHON) lookup_server.py &
 	@echo "\033[32m✅ Lookup server en http://localhost:5001\033[0m"
 agent\:lookup: agent-lookup
 
 ## Run trading agent manually
 agent-main:
-	@cd backend/agent && python3 main.py
+	@cd backend/agent && $(AGENT_PYTHON) main.py
 agent\:main: agent-main
 
 ## Run football daily selection for today
 agent-football:
-	@cd backend/agent && python3 steps/football_daily.py
+	@cd backend/agent && $(AGENT_PYTHON) steps/football_daily.py
 agent\:football: agent-football
 
 ## Run football daily selection for tomorrow
 agent-football-manana:
-	@cd backend/agent && python3 steps/football_daily.py --manana
+	@cd backend/agent && $(AGENT_PYTHON) steps/football_daily.py --manana
 agent\:football-manana: agent-football-manana

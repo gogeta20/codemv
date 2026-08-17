@@ -16,8 +16,11 @@ help:
 	{ lastLine = $$0 }' $(MAKEFILE_LIST)
 
 include devops/mk/docker.mk
+include devops/mk/ollama.mk
 include devops/mk/symfony.mk
 include devops/mk/identity.mk
 include devops/mk/event-messaging.mk
 include devops/mk/sonar.mk
 include devops/mk/Identity/Test/index.mk
+
+include devops/mk/copas.mk

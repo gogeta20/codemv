@@ -1,5 +1,6 @@
 import requests
 from datetime import date, datetime, timezone
+import re
 
 BASE_SITE = "https://site.api.espn.com/apis/site/v2/sports/soccer"
 BASE_V2   = "https://site.api.espn.com/apis/v2/sports/soccer"
@@ -416,6 +417,141 @@ def _extract_leaders_by_team(leaders: list, home_name: str | None, away_name: st
             "stats":  cats,
         }
     return sides
+
+
+def get_team_schedule_context(liga: str, team_id: str, event_id: str | None = None, match_dt: datetime | None = None) -> dict | None:
+    """Contexto corto de calendario del equipo alrededor de un partido."""
+    url = f"{BASE_SITE}/{liga}/teams/{team_id}/schedule"
+    try:
+        res = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+        res.raise_for_status()
+        events = res.json().get("events", [])
+    except Exception as e:
+        print(f"[espn] schedule context {liga}/{team_id} ERROR: {e}")
+        return None
+
+    parsed = []
+    for ev in events:
+        raw_date = ev.get("date")
+        if not raw_date:
+            continue
+        try:
+            ev_dt = datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+
+        comp = ev.get("competitions", [{}])[0]
+        competitors = comp.get("competitors", [])
+        me = next((c for c in competitors if str(c.get("team", {}).get("id", "")) == str(team_id)), None)
+        opponent = next((c for c in competitors if str(c.get("team", {}).get("id", "")) != str(team_id)), None)
+        status_type = comp.get("status", {}).get("type", {}).get("name", "")
+        notes = comp.get("notes", [])
+        note_headline = notes[0].get("headline", "") if notes else ""
+        season = ev.get("season", {}) if isinstance(ev.get("season"), dict) else {}
+        season_slug = season.get("slug", "")
+        season_name = season.get("name", "")
+        label_bits = [
+            ev.get("shortName", ""),
+            comp.get("type", {}).get("text", "") if isinstance(comp.get("type"), dict) else "",
+            season_name,
+            season_slug,
+            note_headline,
+        ]
+        label = ' | '.join(bit for bit in label_bits if bit)
+
+        parsed.append({
+            "event_id": str(ev.get("id", "")),
+            "date": ev_dt,
+            "status": status_type,
+            "competition": _classify_competition_label(label),
+            "es_europeo": _is_european_comp(label),
+            "es_local": (me or {}).get("homeAway") == "home",
+            "rival": (opponent or {}).get("team", {}).get("displayName", ""),
+            "label": label.strip(),
+        })
+
+    if not parsed:
+        return None
+
+    parsed.sort(key=lambda item: item["date"])
+
+    target = None
+    if event_id:
+        target = next((item for item in parsed if item["event_id"] == str(event_id)), None)
+    if target is None and match_dt is not None:
+        target = min(parsed, key=lambda item: abs((item["date"] - match_dt).total_seconds()))
+    if target is None:
+        return None
+
+    idx = parsed.index(target)
+    prev_ev = parsed[idx - 1] if idx > 0 else None
+    next_ev = parsed[idx + 1] if idx + 1 < len(parsed) else None
+
+    def _resume(ev: dict | None) -> dict | None:
+        if ev is None:
+            return None
+        return {
+            "event_id": ev["event_id"],
+            "date": ev["date"].isoformat(),
+            "competition": ev["competition"],
+            "es_europeo": ev["es_europeo"],
+            "es_local": ev["es_local"],
+            "rival": ev["rival"],
+            "label": ev["label"],
+        }
+
+    days_since_prev = None
+    if prev_ev is not None:
+        days_since_prev = round((target["date"] - prev_ev["date"]).total_seconds() / 86400, 1)
+
+    days_until_next = None
+    if next_ev is not None:
+        days_until_next = round((next_ev["date"] - target["date"]).total_seconds() / 86400, 1)
+
+    return {
+        "days_since_prev": days_since_prev,
+        "days_until_next": days_until_next,
+        "prev": _resume(prev_ev),
+        "next": _resume(next_ev),
+    }
+
+
+def _is_european_comp(label: str) -> bool:
+    value = (label or '').lower()
+    return any(token in value for token in (
+        'uefa', 'champions league', 'europa league', 'conference league',
+        'qualifying', 'play-off', 'playoff'
+    ))
+
+
+def _classify_competition_label(label: str) -> str:
+    value = (label or '').lower()
+    if 'champions league' in value:
+        return 'Champions League'
+    if 'europa league' in value:
+        return 'Europa League'
+    if 'conference league' in value:
+        return 'Conference League'
+    if 'qualifying' in value and 'champions' in value:
+        return 'Champions League'
+    if 'qualifying' in value and 'europa' in value:
+        return 'Europa League'
+    if 'qualifying' in value and 'conference' in value:
+        return 'Conference League'
+
+    for pattern, label_out in (
+        (r'allsvenskan', 'Allsvenskan'),
+        (r'pro league', 'Pro League'),
+        (r'premier league', 'Premier League'),
+        (r'championship', 'Championship'),
+        (r'segunda', 'Segunda'),
+        (r'liga i\b', 'Liga I'),
+        (r'eliteserien', 'Eliteserien'),
+    ):
+        if re.search(pattern, value):
+            return label_out
+
+    return 'liga'
 
 
 def get_team_corners_avg(liga: str, team_id: str, n_partidos: int = 10) -> dict | None:

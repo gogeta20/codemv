@@ -9,6 +9,16 @@ export default [
     meta: { view: 'FutbolSeleccionView.vue', endpoint: 'GET /api/futbol/seleccion' },
   },
   {
+    path: '/futbol/copas',
+    component: () => import('@/Futbol/Infrastructure/View/FutbolCopasView.vue'),
+    meta: { view: 'FutbolCopasView.vue', endpoint: 'GET /api/futbol/copas' },
+  },
+  {
+    path: '/futbol/copas/:competition/:eventId',
+    component: () => import('@/Futbol/Infrastructure/View/FutbolCopaDetalleView.vue'),
+    meta: { view: 'FutbolCopaDetalleView.vue', endpoint: 'GET /api/futbol/copas/{competition}/{eventId}' },
+  },
+  {
     path: '/futbol/partidos',
     component: () => import('@/Futbol/Infrastructure/View/FutbolPartidosView.vue'),
     meta: { view: 'FutbolPartidosView.vue', endpoint: 'GET /api/futbol/partidos' },

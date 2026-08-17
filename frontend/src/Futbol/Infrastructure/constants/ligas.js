@@ -23,4 +23,5 @@ export const LIGAS = [
   { label: 'Portugal — Primeira Liga',    code: 'por.1' },
   { label: 'Suecia — Allsvenskan',        code: 'swe.1' },
   { label: 'Turquía — Süper Lig',         code: 'tur.1' },
+  { label: 'Ucrania — Premier League',     code: 'ukr.1' },
 ]

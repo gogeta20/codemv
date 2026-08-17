@@ -92,6 +92,9 @@ services:
     App\Futbol\Domain\Repository\FutbolFavoritoRepositoryInterface:
         class: App\Futbol\Infrastructure\Doctrine\Repository\DoctrineFutbolFavoritoRepository
 
+    App\Futbol\Domain\Repository\FutbolCopaPartidoRepositoryInterface:
+        class: App\Futbol\Infrastructure\Doctrine\Repository\DoctrineFutbolCopaPartidoRepository
+
     # --- ActiveDirectory: Repository bindings ---
     App\ActiveDirectory\Domain\Repository\OrganizationRepositoryInterface:
         class: App\ActiveDirectory\Infrastructure\Ldap\AdOrganizationRepository

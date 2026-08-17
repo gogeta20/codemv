@@ -8,7 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'futbol_ligas')]
-#[ORM\Index(columns: ['codigo_espn'], name: 'idx_liga_codigo')]
+#[ORM\Index(columns: ['external_code'], name: 'idx_liga_codigo')]
 #[ORM\Index(columns: ['activa'], name: 'idx_liga_activa')]
 class FutbolLiga
 {
@@ -23,7 +23,7 @@ class FutbolLiga
     #[ORM\Column(type: 'string', length: 100)]
     private string $nombre;
 
-    #[ORM\Column(name: 'codigo_espn', type: 'string', length: 20, unique: true)]
+    #[ORM\Column(name: 'external_code', type: 'string', length: 20, unique: true)]
     private string $codigoEspn;
 
     #[ORM\Column(type: 'string', length: 50)]
