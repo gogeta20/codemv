@@ -32,3 +32,12 @@ __pycache__/
 *.pyc
 *.pyo
 .env
+# Ollama local
+.local/ollama/
+.local/ollama-home/
+.local/ollama-models/
+backend/agent/.env
+.python-agent/
+
+.venv-agent/
+.tmp-copas-screen.png

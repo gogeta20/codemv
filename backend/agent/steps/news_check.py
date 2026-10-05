@@ -6,9 +6,8 @@ import requests
 from tools.news import get_news
 from tools.telegram import send_news_alert
 from db import save_noticias
+from llm import OLLAMA_CHAT_URL, OLLAMA_MODEL
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL      = "llama3.2:3b"
 OLLAMA_TIMEOUT = 25  # segundos — si tarda más, manda solo titulares
 
 SYSTEM_PROMPT = """Eres un agente de trading. Recibirás noticias recientes de una acción que movió más del 5%.
@@ -42,9 +41,9 @@ def _ollama_analyze(symbol: str, change_pct: float, articles: list) -> str:
 
     try:
         res = requests.post(
-            OLLAMA_URL,
+            OLLAMA_CHAT_URL,
             json={
-                "model": MODEL,
+                "model": OLLAMA_MODEL,
                 "messages": [
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user",   "content": "\n".join(lines)},

@@ -2,6 +2,7 @@
 
 namespace App\Futbol\Application\Favorito\GetPartidos;
 
+use App\Futbol\Application\Source\UkrainianPremierLeagueOfficialSource;
 use App\Futbol\Domain\Repository\FutbolFavoritoRepositoryInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -12,6 +13,7 @@ final class GetFavoritosPartidosUseCase
     public function __construct(
         private readonly FutbolFavoritoRepositoryInterface $repository,
         private readonly HttpClientInterface $httpClient,
+        private readonly UkrainianPremierLeagueOfficialSource $uplSource,
     ) {}
 
     public function execute(): array
@@ -21,6 +23,14 @@ final class GetFavoritosPartidosUseCase
         $results   = [];
 
         foreach ($favoritos as $favorito) {
+            if ($this->uplSource->supports($favorito->getEspnLigaCode())) {
+                $results[] = [
+                    'favorito' => $favorito->toArray(),
+                    'proximo_partido' => $this->uplSource->findNextMatch($favorito->getEspnTeamId(), $now),
+                ];
+                continue;
+            }
+
             $url = sprintf(self::ESPN_SCHEDULE, $favorito->getEspnLigaCode(), $favorito->getEspnTeamId());
 
             try {

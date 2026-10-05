@@ -1,4 +1,5 @@
-from tools.espn import get_match_summary, get_team_corners_avg
+from tools.espn import get_match_summary, get_team_corners_avg, get_team_schedule_context
+from tools.squad_context import get_team_squad_context
 
 ODDS_H2H_KEYS = [
     "odds_local", "odds_empate", "odds_visitante", "spread", "over_under",
@@ -37,7 +38,13 @@ def enrich_partido(p: dict, liga_code: str) -> dict:
     if tid_l and tid_v:
         p["corners_local"]     = get_team_corners_avg(liga_code, tid_l, n_partidos=10)
         p["corners_visitante"] = get_team_corners_avg(liga_code, tid_v, n_partidos=10)
+        p["fixture_context_local"] = get_team_schedule_context(liga_code, tid_l, p.get("espn_event_id"), p.get("hora_utc"))
+        p["fixture_context_visitante"] = get_team_schedule_context(liga_code, tid_v, p.get("espn_event_id"), p.get("hora_utc"))
     else:
         p["corners_local"] = p["corners_visitante"] = None
+        p["fixture_context_local"] = p["fixture_context_visitante"] = None
+
+    p["squad_context_local"] = get_team_squad_context(p.get("equipo_local", ""), p.get("fecha") or p.get("hora_utc"))
+    p["squad_context_visitante"] = get_team_squad_context(p.get("equipo_visitante", ""), p.get("fecha") or p.get("hora_utc"))
 
     return p

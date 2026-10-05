@@ -5,9 +5,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import requests
 from db import get_active_acciones, save_precio
 from tools.prices import get_price
+from llm import OLLAMA_CHAT_URL, OLLAMA_MODEL
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL = "llama3.2:3b"
 
 SYSTEM_PROMPT = """Eres un agente de trading especializado en descubrir empresas antes de que sean famosas.
 Recibirás datos reales de precios ya obtenidos. Analiza y sé conciso:
@@ -58,9 +57,9 @@ def run():
     print(f"\n[morning_analysis] Enviando datos al agente...\n")
 
     response = requests.post(
-        OLLAMA_URL,
+        OLLAMA_CHAT_URL,
         json={
-            "model": MODEL,
+            "model": OLLAMA_MODEL,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_message},

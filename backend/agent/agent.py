@@ -1,9 +1,8 @@
 import json
 import requests
 from tools.prices import get_price
+from llm import OLLAMA_CHAT_URL, OLLAMA_MODEL
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL = "llama3.2:3b"
 
 SYSTEM_PROMPT = """Eres un agente de trading. Analizas precios de activos financieros.
 Tienes tools disponibles y DEBES usarlas cuando necesites datos.
@@ -43,12 +42,12 @@ def run_agent(user_message: str):
         {"role": "user", "content": user_message},
     ]
 
-    print(f"\nUsuario: {user_message}\n")1
+    print(f"\nUsuario: {user_message}\n")
 
     while True:
         response = requests.post(
-            OLLAMA_URL,
-            json={"model": MODEL, "messages": messages, "tools": TOOLS, "stream": False},
+            OLLAMA_CHAT_URL,
+            json={"model": OLLAMA_MODEL, "messages": messages, "tools": TOOLS, "stream": False},
         )
         response.raise_for_status()
         msg = response.json()["message"]

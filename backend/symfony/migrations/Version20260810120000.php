@@ -45,9 +45,9 @@ final class Version20260810120000 extends AbstractMigration
     {
         foreach (self::LIGAS as $liga) {
             $this->addSql(
-                'INSERT INTO futbol_ligas (uuid, nombre, codigo_espn, pais, division, activa, created_at)
+                'INSERT INTO futbol_ligas (uuid, nombre, external_code, pais, division, activa, created_at)
                  VALUES (gen_random_uuid()::text, :nombre, :codigo, :pais, :division, false, NOW())
-                 ON CONFLICT (codigo_espn) DO NOTHING',
+                 ON CONFLICT (external_code) DO NOTHING',
                 [
                     'nombre'   => $liga['nombre'],
                     'codigo'   => $liga['codigo'],
@@ -61,6 +61,6 @@ final class Version20260810120000 extends AbstractMigration
     public function down(Schema $schema): void
     {
         $codigos = array_map(fn($liga) => $liga['codigo'], self::LIGAS);
-        $this->addSql('DELETE FROM futbol_ligas WHERE codigo_espn IN (:codigos) AND activa = false', ['codigos' => $codigos], ['codigos' => \Doctrine\DBAL\Connection::PARAM_STR_ARRAY]);
+        $this->addSql('DELETE FROM futbol_ligas WHERE external_code IN (:codigos) AND activa = false', ['codigos' => $codigos], ['codigos' => \Doctrine\DBAL\Connection::PARAM_STR_ARRAY]);
     }
 }

@@ -24,10 +24,9 @@ from db import (
     get_active_ligas, save_partido_futbol, save_seleccion_diaria,
     migrate_mundial_columns, get_or_create_mundial_liga,
 )
+from llm import OLLAMA_CHAT_URL, OLLAMA_MODEL
 
 LIGA_CODE  = os.getenv("MUNDIAL_ESPN_CODE", "fifa.world")
-OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL      = "llama3.2:3b"
 
 SYSTEM_PROMPT = """Eres un analista experto en fútbol internacional y Mundiales.
 Recibirás partidos seleccionados del Mundial 2026 con ranking FIFA, probabilidades y H2H.
@@ -223,9 +222,9 @@ def _generar_analisis_ollama(partidos: list[dict], rankings: dict) -> str:
 
     try:
         res = requests.post(
-            OLLAMA_URL,
+            OLLAMA_CHAT_URL,
             json={
-                "model": MODEL,
+                "model": OLLAMA_MODEL,
                 "messages": [
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user",   "content": f"Partidos del Mundial de hoy:\n\n" + "\n".join(lineas) + "\n\nDa el análisis."},

@@ -11,9 +11,8 @@ from tools.enrich import enrich_partido
 from tools.match_scorer import rank_partidos, rank_partidos_under, score_match
 from tools.telegram import send_football as telegram_send
 from db import get_active_ligas, get_all_favoritos, get_or_create_liga, save_partido_futbol, save_seleccion_diaria, get_ligas_config
+from llm import OLLAMA_CHAT_URL, OLLAMA_MODEL
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL      = "llama3.2:3b"
 
 SYSTEM_PROMPT = """Eres un analista de fútbol experto. Recibirás datos de partidos seleccionados hoy.
 Para cada partido, genera un análisis breve (2-3 líneas) que incluya:
@@ -276,6 +275,15 @@ def _generar_analisis_ollama(partidos: list[dict]) -> str:
         h2h_l = p.get("h2h_ganados_local", 0) or 0
         h2h_v = p.get("h2h_ganados_visitante", 0) or 0
 
+        fatiga = p.get("score_detalle", {}).get("fatiga_calendario", {})
+        plantilla = p.get("score_detalle", {}).get("contexto_plantilla", {})
+        fatiga_txt = ""
+        if fatiga:
+            fatiga_txt = f" | Calendario: {'; '.join(fatiga.get('razones', []))}"
+        plantilla_txt = ""
+        if plantilla:
+            plantilla_txt = f" | Plantilla: {'; '.join(plantilla.get('razones', []))}"
+
         lineas.append(
             f"- {p['equipo_local']} (pos {pos_l}) vs {p['equipo_visitante']} (pos {pos_v}) | "
             f"Liga: {p['liga_nombre']} | "
@@ -284,6 +292,8 @@ def _generar_analisis_ollama(partidos: list[dict]) -> str:
             f"H2H: {h2h_l}-{h2h_v} | "
             f"Forma local: {p.get('forma_local','?')} | Forma visit: {p.get('forma_visitante','?')} | "
             f"Score analizabilidad: {p['score_analisis']}"
+            f"{fatiga_txt}"
+            f"{plantilla_txt}"
         )
 
     contexto = "\n".join(lineas)
@@ -291,9 +301,9 @@ def _generar_analisis_ollama(partidos: list[dict]) -> str:
 
     try:
         res = requests.post(
-            OLLAMA_URL,
+            OLLAMA_CHAT_URL,
             json={
-                "model": MODEL,
+                "model": OLLAMA_MODEL,
                 "messages": [
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user",   "content": prompt},

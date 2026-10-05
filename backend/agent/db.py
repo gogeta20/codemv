@@ -64,7 +64,7 @@ def get_active_ligas() -> list[dict]:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT uuid, nombre, codigo_espn, pais, division
+                SELECT uuid, nombre, external_code, pais, division
                 FROM futbol_ligas
                 WHERE activa = true
                 ORDER BY pais, division
@@ -259,9 +259,9 @@ def seed_ligas() -> None:
         with conn.cursor() as cur:
             for nombre, codigo, pais, division in ligas:
                 cur.execute("""
-                    INSERT INTO futbol_ligas (uuid, nombre, codigo_espn, pais, division, activa, created_at)
+                    INSERT INTO futbol_ligas (uuid, nombre, external_code, pais, division, activa, created_at)
                     VALUES (gen_random_uuid(), %s, %s, %s, %s, true, NOW())
-                    ON CONFLICT (codigo_espn) DO NOTHING
+                    ON CONFLICT (external_code) DO NOTHING
                 """, (nombre, codigo, pais, division))
             conn.commit()
     print(f"[db] Ligas seeded ({len(ligas)} ligas)")
@@ -276,13 +276,13 @@ def get_or_create_liga(codigo_espn: str, nombre: str, pais: str) -> str:
     from uuid import uuid4
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT uuid FROM futbol_ligas WHERE codigo_espn = %s", (codigo_espn,))
+            cur.execute("SELECT uuid FROM futbol_ligas WHERE external_code = %s", (codigo_espn,))
             row = cur.fetchone()
             if row:
                 return row[0]
             new_uuid = str(uuid4())
             cur.execute("""
-                INSERT INTO futbol_ligas (uuid, nombre, codigo_espn, pais, division, activa, created_at)
+                INSERT INTO futbol_ligas (uuid, nombre, external_code, pais, division, activa, created_at)
                 VALUES (%s, %s, %s, %s, 1, false, NOW())
             """, (new_uuid, nombre, codigo_espn, pais))
             conn.commit()
@@ -304,13 +304,13 @@ def get_or_create_mundial_liga(codigo: str = "fifa.world", nombre: str = "FIFA W
     from uuid import uuid4
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT uuid FROM futbol_ligas WHERE codigo_espn = %s", (codigo,))
+            cur.execute("SELECT uuid FROM futbol_ligas WHERE external_code = %s", (codigo,))
             row = cur.fetchone()
             if row:
                 return row[0]
             new_uuid = str(uuid4())
             cur.execute("""
-                INSERT INTO futbol_ligas (uuid, nombre, codigo_espn, pais, division, activa, created_at)
+                INSERT INTO futbol_ligas (uuid, nombre, external_code, pais, division, activa, created_at)
                 VALUES (%s, %s, %s, 'International', 1, true, NOW())
             """, (new_uuid, nombre, codigo))
             conn.commit()

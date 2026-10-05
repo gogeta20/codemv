@@ -2,16 +2,32 @@
 
 namespace App\Futbol\Application\Liga\GetEquiposLiga;
 
+use App\Futbol\Application\Source\UkrainianPremierLeagueOfficialSource;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class GetEquiposLigaUseCase
 {
     private const ESPN_URL = 'https://site.api.espn.com/apis/v2/sports/soccer/%s/standings';
 
-    public function __construct(private readonly HttpClientInterface $httpClient) {}
+    public function __construct(
+        private readonly HttpClientInterface $httpClient,
+        private readonly UkrainianPremierLeagueOfficialSource $uplSource,
+    ) {}
 
     public function execute(string $codigo): array
     {
+        if ($this->uplSource->supports($codigo)) {
+            $equipos = $this->uplSource->fetchStandings();
+
+            usort($equipos, fn($a, $b) => $a['total_gpm'] <=> $b['total_gpm']);
+
+            return [
+                'equipos' => $equipos,
+                'liga' => $codigo,
+                'total' => count($equipos),
+            ];
+        }
+
         $response = $this->httpClient->request('GET', sprintf(self::ESPN_URL, $codigo), [
             'headers' => ['User-Agent' => 'curl/8.5.0'],
             'timeout' => 10,
